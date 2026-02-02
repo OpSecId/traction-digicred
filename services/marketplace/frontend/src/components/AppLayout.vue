@@ -264,6 +264,7 @@ function isActive(nav: string) {
 .floating-bar-tabs {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .type-circle {
@@ -297,20 +298,24 @@ function isActive(nav: string) {
 
 .floating-bar-search {
   flex: 1;
+  min-width: 0; /* Allow flex shrink on mobile */
   max-width: 400px;
-  min-width: 120px;
+  overflow: hidden;
 }
 
 .floating-bar-search .search-bar {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  max-width: 100%;
   background: $marketplace-bg-card;
   border-radius: 24px;
   padding: 10px 16px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   border: 1px solid $marketplace-panel-border;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 
   i {
     color: $marketplace-text-muted;
@@ -325,6 +330,7 @@ function isActive(nav: string) {
 
 .floating-bar-search .search-input {
   flex: 1;
+  min-width: 0; /* Prevent input from forcing overflow */
   border: none;
   outline: none;
   font-size: 0.95rem;

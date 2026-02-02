@@ -1,7 +1,43 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
+import fs from 'fs';
 import { VitePWA } from 'vite-plugin-pwa';
+
+function getAllowedHosts(): string[] | true {
+  // Prefer CORS_ORIGIN env (same as backend) - comma-separated origins
+  const origins = process.env.CORS_ORIGIN?.split(',').map((o) => o.trim()).filter(Boolean);
+  if (origins?.length) {
+    const hosts = origins
+      .map((origin) => {
+        try {
+          return new URL(origin).hostname;
+        } catch {
+          return null;
+        }
+      })
+      .filter((h): h is string => !!h);
+    if (hosts.length) {
+      const wildcards = [...new Set(hosts.map((h) => `.${h.split('.').slice(-2).join('.')}`))];
+      return [...hosts, ...wildcards];
+    }
+  }
+  // Fallback: config.json app.domain
+  try {
+    const configPath = path.resolve(__dirname, 'public/config.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const domain = config?.app?.domain;
+      if (domain) {
+        const host = new URL(domain).hostname;
+        return [host, `.${host.split('.').slice(-2).join('.')}`];
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return true;
+}
 
 export default defineConfig({
   plugins: [
@@ -95,6 +131,7 @@ export default defineConfig({
   server: {
     port: 5175,
     host: '0.0.0.0',
+    allowedHosts: getAllowedHosts(),
     proxy: {
       '/api': {
         target: 'http://localhost:5174',

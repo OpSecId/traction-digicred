@@ -1,8 +1,24 @@
+/** Course or class taken (transcript-specific, no PII) */
+export interface TranscriptCourse {
+  name: string;
+  grade?: string;
+  credits?: number;
+  semester?: string;
+}
+
 export interface CredentialSubject {
   givenName?: string;
   familyName?: string;
   validFrom?: string;
   validUntil?: string;
+  /** Program or degree (e.g. "Bachelor of Science in Nursing") */
+  program?: string;
+  /** GPA (e.g. "3.7") */
+  gpa?: string;
+  /** Graduation or completion date */
+  graduationDate?: string;
+  /** Courses taken */
+  courses?: TranscriptCourse[];
   [key: string]: unknown;
 }
 

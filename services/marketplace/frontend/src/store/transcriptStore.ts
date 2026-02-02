@@ -2,37 +2,56 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import axios from 'axios';
 import type { JobWithEmployer } from '@/types/demo';
-import type { DemoCredential } from '@/types/credentials';
+import type { DemoCredential, TranscriptCourse } from '@/types/credentials';
 import embeddedDemo from '@/data/embeddedDemo.json';
 
 const STORAGE_KEY = 'marketplace-transcript-shared';
 const RECOMMENDATIONS_KEY = 'marketplace-recommendations';
+const SHARED_CREDENTIAL_KEY = 'marketplace-shared-credential';
+
+export interface SharedCredentialInfo {
+  establishmentName?: string;
+  name: string;
+  type: string;
+  /** Program or degree (no PII) */
+  program?: string;
+  /** GPA (e.g. "3.7") */
+  gpa?: string;
+  /** Graduation date */
+  graduationDate?: string;
+  /** Courses taken (no PII) */
+  courses?: TranscriptCourse[];
+}
 
 function loadFromStorage() {
   try {
     const shared = localStorage.getItem(STORAGE_KEY) === 'true';
     const stored = localStorage.getItem(RECOMMENDATIONS_KEY);
     const jobs = stored ? (JSON.parse(stored) as JobWithEmployer[]) : [];
-    return { shared, jobs };
+    const credStored = localStorage.getItem(SHARED_CREDENTIAL_KEY);
+    const credential = credStored ? (JSON.parse(credStored) as SharedCredentialInfo) : null;
+    return { shared, jobs, credential };
   } catch {
-    return { shared: false, jobs: [] };
+    return { shared: false, jobs: [], credential: null };
   }
 }
 
 export const useTranscriptStore = defineStore('transcript', () => {
-  const { shared, jobs } = loadFromStorage();
+  const { shared, jobs, credential } = loadFromStorage();
   const transcriptShared = ref(shared);
   const customRecommendations = ref<JobWithEmployer[]>(jobs);
+  const sharedCredentialInfo = ref<SharedCredentialInfo | null>(credential);
   const loading = ref(false);
   const error = ref<Error | null>(null);
   const fetchingCredentials = ref(false);
   const availableCredentials = ref<DemoCredential[]>([]);
 
   watch(
-    [transcriptShared, customRecommendations],
-    ([shared, recs]) => {
+    [transcriptShared, customRecommendations, sharedCredentialInfo],
+    ([shared, recs, cred]) => {
       localStorage.setItem(STORAGE_KEY, String(shared));
       localStorage.setItem(RECOMMENDATIONS_KEY, JSON.stringify(recs));
+      localStorage.setItem(SHARED_CREDENTIAL_KEY, cred ? JSON.stringify(cred) : '');
     },
     { deep: true }
   );
@@ -99,7 +118,7 @@ export const useTranscriptStore = defineStore('transcript', () => {
     return featured.length > 0 ? featured : allJobs.slice(0, 8);
   }
 
-  async function shareTranscript(selectedCredentialIds: string[]) {
+  async function shareTranscript(selectedCredentialIds: string[], credentialInfo?: SharedCredentialInfo) {
     loading.value = true;
     error.value = null;
     try {
@@ -107,12 +126,14 @@ export const useTranscriptStore = defineStore('transcript', () => {
         presentation: { selectedCredentialIds },
       });
       customRecommendations.value = res.data.jobs ?? [];
+      sharedCredentialInfo.value = credentialInfo ?? null;
       transcriptShared.value = true;
       availableCredentials.value = [];
       return customRecommendations.value;
     } catch {
       // Fallback: use embedded demo when API returns 500 (static deployment)
       customRecommendations.value = getRecommendationsFromEmbedded();
+      sharedCredentialInfo.value = credentialInfo ?? null;
       transcriptShared.value = true;
       availableCredentials.value = [];
       return customRecommendations.value;
@@ -124,13 +145,16 @@ export const useTranscriptStore = defineStore('transcript', () => {
   function resetTranscript() {
     transcriptShared.value = false;
     customRecommendations.value = [];
+    sharedCredentialInfo.value = null;
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(RECOMMENDATIONS_KEY);
+    localStorage.removeItem(SHARED_CREDENTIAL_KEY);
   }
 
   return {
     transcriptShared,
     customRecommendations,
+    sharedCredentialInfo,
     loading,
     error,
     fetchingCredentials,

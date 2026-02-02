@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import axios from 'axios';
-import type { DemoConfig, JobWithEmployer } from '@/types/demo';
+import type { DemoConfig, JobWithEmployer, TenantRequest } from '@/types/demo';
 import embeddedDemo from '@/data/embeddedDemo.json';
 
 export const useDemoStore = defineStore('demo', () => {
@@ -47,6 +47,11 @@ export const useDemoStore = defineStore('demo', () => {
     const featured = allJobs.value.filter((j) => j.featured);
     if (featured.length > 0) return featured;
     return allJobs.value.slice(0, 6);
+  });
+
+  const tenantRequests = computed<TenantRequest[]>(() => {
+    if (!config.value) return [];
+    return Array.isArray(config.value.tenantRequests) ? config.value.tenantRequests : [];
   });
 
   function normalizeConfig(data: unknown): DemoConfig {
@@ -105,6 +110,7 @@ export const useDemoStore = defineStore('demo', () => {
     allJobs,
     categories,
     recommendedJobs,
+    tenantRequests,
     load,
     getJobsByEmployer,
     getEmployerById,

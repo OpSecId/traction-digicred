@@ -31,6 +31,12 @@ const routes = [
         meta: { title: 'Education', nav: 'discover', marketplaceType: 'education' },
       },
       {
+        path: 'admin',
+        name: 'Admin',
+        component: () => import('@/views/AdminHub.vue'),
+        meta: { title: 'Platform Admin', nav: 'admin' },
+      },
+      {
         path: 'employer',
         name: 'Employer',
         component: () => import('@/views/EmployerHub.vue'),

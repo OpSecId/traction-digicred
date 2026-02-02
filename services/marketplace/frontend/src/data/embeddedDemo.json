@@ -26,7 +26,36 @@
             "givenName": "John",
             "familyName": "Doe",
             "validFrom": "2024-01-01T00:00:00.000Z",
-            "validUntil": "2026-01-01T00:00:00.000Z"
+            "validUntil": "2026-01-01T00:00:00.000Z",
+            "gpa": 3.8,
+            "graduationDate": "2022-06",
+            "courses": [
+              {
+                "name": "Biology",
+                "grade": "A",
+                "credits": 1
+              },
+              {
+                "name": "Chemistry",
+                "grade": "A-",
+                "credits": 1
+              },
+              {
+                "name": "Algebra II",
+                "grade": "A",
+                "credits": 1
+              },
+              {
+                "name": "English Literature",
+                "grade": "B+",
+                "credits": 1
+              },
+              {
+                "name": "US History",
+                "grade": "A",
+                "credits": 1
+              }
+            ]
           }
         },
         {
@@ -40,7 +69,48 @@
             "givenName": "John",
             "familyName": "Doe",
             "validFrom": "2024-01-01T00:00:00.000Z",
-            "validUntil": "2026-01-01T00:00:00.000Z"
+            "validUntil": "2026-01-01T00:00:00.000Z",
+            "program": "Bachelor of Science in Nursing",
+            "gpa": 3.7,
+            "graduationDate": "2024-05",
+            "courses": [
+              {
+                "name": "Anatomy & Physiology I",
+                "grade": "A",
+                "credits": 4,
+                "semester": "Fall 2022"
+              },
+              {
+                "name": "Anatomy & Physiology II",
+                "grade": "A-",
+                "credits": 4,
+                "semester": "Spring 2023"
+              },
+              {
+                "name": "Introduction to Nursing",
+                "grade": "A",
+                "credits": 3,
+                "semester": "Fall 2022"
+              },
+              {
+                "name": "Pharmacology",
+                "grade": "B+",
+                "credits": 3,
+                "semester": "Spring 2023"
+              },
+              {
+                "name": "Clinical Practice I",
+                "grade": "A",
+                "credits": 4,
+                "semester": "Fall 2023"
+              },
+              {
+                "name": "Medical-Surgical Nursing",
+                "grade": "A",
+                "credits": 4,
+                "semester": "Spring 2024"
+              }
+            ]
           }
         }
       ]
@@ -417,6 +487,32 @@
           ]
         }
       ]
+    }
+  ],
+  "tenantRequests": [
+    {
+      "id": "req-1",
+      "tenantType": "Employer",
+      "name": "TechCorp Industries",
+      "email": "hr@techcorp.example.com",
+      "submittedAt": "2025-01-28T10:00:00Z",
+      "status": "pending"
+    },
+    {
+      "id": "req-2",
+      "tenantType": "Scholarship Admin",
+      "name": "State Education Foundation",
+      "email": "admin@stateedu.org",
+      "submittedAt": "2025-01-27T14:30:00Z",
+      "status": "pending"
+    },
+    {
+      "id": "req-3",
+      "tenantType": "Education Institution",
+      "name": "Metro Community College",
+      "email": "registrar@metrocc.edu",
+      "submittedAt": "2025-01-26T09:15:00Z",
+      "status": "pending"
     }
   ]
 }

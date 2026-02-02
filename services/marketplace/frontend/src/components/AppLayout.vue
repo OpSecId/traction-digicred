@@ -143,11 +143,13 @@ function onSearchInput(e: Event) {
 const navItems = [
   { path: '/', label: 'Channel', icon: 'pi-compass', nav: 'discover' },
   { path: '/employer', label: 'Employer', icon: 'pi-briefcase', nav: 'employer' },
+  { path: '/admin', label: 'Admin', icon: 'pi-cog', nav: 'admin' },
 ];
 
 function isActive(nav: string) {
   if (nav === 'discover') return route.path === '/' || route.path.startsWith('/scholarships') || route.path.startsWith('/services') || route.path.startsWith('/education') || route.path.startsWith('/job/');
   if (nav === 'employer') return route.path.startsWith('/employer');
+  if (nav === 'admin') return route.path.startsWith('/admin');
   return false;
 }
 </script>

@@ -9,6 +9,68 @@
       <div class="hero-image" />
     </div>
 
+    <!-- Transcript overview card (shown when transcript shared) -->
+    <section
+      v-if="transcriptStore.transcriptShared && !demoStore.loading && !demoStore.error"
+      class="transcript-overview-section"
+    >
+      <div class="transcript-overview-card">
+        <div class="transcript-overview-header">
+          <div class="transcript-overview-header-left">
+            <div class="transcript-overview-icon" aria-hidden="true">
+              <i class="pi pi-file-edit"></i>
+            </div>
+            <h2 class="transcript-overview-title">Your transcript overview</h2>
+          </div>
+          <div class="transcript-overview-actions">
+            <button
+              type="button"
+              class="clear-recommendations-btn"
+              :disabled="transcriptStore.loading"
+              @click="transcriptStore.resetTranscript()"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              class="update-recommendations-btn"
+              :disabled="transcriptStore.loading"
+              @click="showShareModal = true"
+            >
+              <i v-if="transcriptStore.loading" class="pi pi-spin pi-spinner"></i>
+              <i v-else class="pi pi-refresh"></i>
+              {{ transcriptStore.loading ? 'Updating...' : 'Update' }}
+            </button>
+          </div>
+        </div>
+        <p class="transcript-overview-text">{{ transcriptOverviewText }}</p>
+        <div v-if="hasTranscriptDetails" class="transcript-details">
+          <div v-if="transcriptStore.sharedCredentialInfo?.program" class="transcript-detail-row">
+            <span class="transcript-detail-label">Program</span>
+            <span class="transcript-detail-value">{{ transcriptStore.sharedCredentialInfo.program }}</span>
+          </div>
+          <div v-if="transcriptStore.sharedCredentialInfo?.gpa" class="transcript-detail-row">
+            <span class="transcript-detail-label">GPA</span>
+            <span class="transcript-detail-value">{{ transcriptStore.sharedCredentialInfo.gpa }}</span>
+          </div>
+          <div v-if="transcriptStore.sharedCredentialInfo?.courses?.length" class="transcript-courses">
+            <h4 class="transcript-courses-title">Courses</h4>
+            <ul class="transcript-courses-list">
+              <li
+                v-for="(course, i) in transcriptStore.sharedCredentialInfo.courses"
+                :key="i"
+                class="transcript-course-item"
+              >
+                <span class="transcript-course-name">{{ course.name }}</span>
+                <span v-if="course.grade" class="transcript-course-grade">{{ course.grade }}</span>
+                <span v-if="course.credits" class="transcript-course-credits">{{ course.credits }} cr</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Fixed recommendation widget -->
     <section v-if="!demoStore.loading && !demoStore.error" class="recommended-section-fixed-container">
       <div class="category-section recommended-section recommended-section-fixed">
@@ -17,28 +79,10 @@
             <span class="recommended-title-icon" aria-hidden="true"><i class="pi pi-star-fill"></i></span>
             Recommended for you
           </h2>
-          <button
-            type="button"
-            class="clear-recommendations-btn"
-            :disabled="transcriptStore.loading"
-            @click="transcriptStore.resetTranscript()"
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            class="update-recommendations-btn"
-            :disabled="transcriptStore.loading"
-            @click="showShareModal = true"
-          >
-            <i v-if="transcriptStore.loading" class="pi pi-spin pi-spinner"></i>
-            <i v-else class="pi pi-refresh"></i>
-            {{ transcriptStore.loading ? 'Updating...' : 'Update' }}
-          </button>
         </div>
 
-        <!-- Fixed-height container: CTA or cards (same 200px in both states) -->
-        <div class="recommended-content">
+        <!-- Fixed-height container: CTA or cards (same 200px in both states); expands when transcript shared -->
+        <div class="recommended-content" :class="{ 'recommended-content-expanded': transcriptStore.transcriptShared }">
           <!-- Before transcript shared: CTA to share -->
           <div v-if="!transcriptStore.transcriptShared" class="share-transcript-cta">
             <div class="share-cta-icon">
@@ -80,7 +124,7 @@
             </div>
           </div>
           <div v-if="transcriptStore.customRecommendations.length === 0" class="no-matches">
-            No matching opportunities found. Browse categories below.
+            No matching opportunities found. Try updating your transcript or clear to browse all opportunities.
           </div>
           </div>
         </div>
@@ -221,7 +265,10 @@
         </div>
       </section>
 
-      <div v-if="visibleCategories.length === 0" class="empty-state">
+      <div
+        v-if="visibleCategories.length === 0 && !transcriptStore.transcriptShared"
+        class="empty-state"
+      >
         <i class="pi pi-inbox"></i>
         <p>No jobs match your search. Try a different search term.</p>
       </div>
@@ -269,15 +316,54 @@ async function handlePresentTranscript() {
 
 async function handleShareSelected() {
   if (!selectedCredentialId.value) return;
+  const cred = transcriptStore.availableCredentials.find((c) => c.id === selectedCredentialId.value);
+  const subj = cred?.credentialSubject;
+  const credentialInfo = cred
+    ? {
+        establishmentName: cred.establishmentName,
+        name: cred.name,
+        type: cred.type,
+        program: subj?.program as string | undefined,
+        gpa: subj?.gpa as string | undefined,
+        graduationDate: subj?.graduationDate as string | undefined,
+        courses: subj?.courses as Array<{ name: string; grade?: string; credits?: number; semester?: string }> | undefined,
+      }
+    : undefined;
   try {
-    await transcriptStore.shareTranscript([selectedCredentialId.value]);
+    await transcriptStore.shareTranscript([selectedCredentialId.value], credentialInfo);
     closeShareModal();
   } catch (e) {
     console.error('Failed to share transcript:', e);
   }
 }
 
+const hasTranscriptDetails = computed(() => {
+  const c = transcriptStore.sharedCredentialInfo;
+  return !!(
+    c?.program ||
+    c?.gpa ||
+    (c?.courses && c.courses.length > 0)
+  );
+});
+
+const transcriptOverviewText = computed(() => {
+  const cred = transcriptStore.sharedCredentialInfo;
+  const establishment = cred?.establishmentName || cred?.name || 'your institution';
+  const type = cred?.type || '';
+  const skills = type.toLowerCase().includes('college')
+    ? 'academic achievement, critical thinking, and research capabilities'
+    : type.toLowerCase().includes('highschool')
+      ? 'foundational knowledge, adaptability, and strong study habits'
+      : type.toLowerCase().includes('graduate')
+        ? 'advanced expertise, leadership potential, and specialized skills'
+        : type.toLowerCase().includes('vocational')
+          ? 'hands-on skills, technical proficiency, and industry readiness'
+          : 'your educational background and transferable skills';
+  return `Based on your transcript from ${establishment}, we've identified your strengths in ${skills}. Below are opportunities tailored to your profile—roles that align with your qualifications and growth potential. Your identity stays private.`;
+});
+
 const visibleCategories = computed(() => {
+  if (transcriptStore.transcriptShared) return [];
   const cats = demoStore.categories.filter((c) => c !== 'All');
   const jobs = filteredJobs.value;
   return cats.filter((cat) =>
@@ -422,6 +508,168 @@ function establishmentInitials(name: string): string {
   padding-top: 16px;
 }
 
+/* Transcript overview widget card */
+.transcript-overview-section {
+  margin-top: 12px;
+  margin-bottom: 20px;
+}
+
+.transcript-overview-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 51, 102, 0.08), 0 2px 8px rgba(0, 51, 102, 0.04);
+  border: 1px solid rgba(0, 51, 102, 0.08);
+  overflow: hidden;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, $marketplace-primary 0%, $marketplace-accent-alt 100%);
+    opacity: 0.9;
+  }
+}
+
+.transcript-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 12px;
+  flex-wrap: wrap;
+}
+
+.transcript-overview-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.transcript-overview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.transcript-overview-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(0, 51, 102, 0.1) 0%, rgba(102, 102, 204, 0.12) 100%);
+  border-radius: 12px;
+  font-size: 1.25rem;
+  color: $marketplace-primary;
+  flex-shrink: 0;
+}
+
+.transcript-overview-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: $marketplace-primary;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.transcript-overview-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: $marketplace-text;
+  margin: 0;
+  padding: 0 20px 20px;
+}
+
+.transcript-details {
+  padding: 0 20px 20px;
+  border-top: 1px solid rgba(0, 51, 102, 0.08);
+  margin-top: 4px;
+  padding-top: 16px;
+}
+
+.transcript-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+.transcript-detail-label {
+  color: $marketplace-text-muted;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.transcript-detail-value {
+  color: $marketplace-primary;
+  font-weight: 600;
+  text-align: right;
+}
+
+.transcript-courses {
+  margin-top: 16px;
+}
+
+.transcript-courses-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: $marketplace-primary;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.transcript-courses-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transcript-course-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.875rem;
+  padding: 8px 10px;
+  background: rgba(0, 51, 102, 0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 51, 102, 0.06);
+}
+
+.transcript-course-name {
+  flex: 1;
+  color: $marketplace-text;
+  font-weight: 500;
+}
+
+.transcript-course-grade {
+  color: $marketplace-primary;
+  font-weight: 600;
+  min-width: 2ch;
+}
+
+.transcript-course-credits {
+  font-size: 0.75rem;
+  color: $marketplace-text-muted;
+}
+
 /* Category section - each has a horizontal scroll of cards */
 .category-section {
   margin-bottom: 32px;
@@ -456,7 +704,9 @@ function establishmentInitials(name: string): string {
 }
 
 .recommended-header .clear-recommendations-btn,
-.recommended-header .update-recommendations-btn {
+.recommended-header .update-recommendations-btn,
+.transcript-overview-actions .clear-recommendations-btn,
+.transcript-overview-actions .update-recommendations-btn {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -504,6 +754,13 @@ function establishmentInitials(name: string): string {
   max-height: 220px;
   overflow: hidden;
   flex-shrink: 0;
+
+  &.recommended-content-expanded {
+    height: auto;
+    min-height: 200px;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 .recommended-section-fixed {
@@ -514,6 +771,20 @@ function establishmentInitials(name: string): string {
 .recommended-content .cards-scroll {
   height: 100%;
   min-height: 200px;
+}
+
+.recommended-content-expanded .cards-scroll-expanded {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+
+  .job-card {
+    flex: 1 1 220px;
+    min-width: 0;
+  }
 }
 
 .recommended-section .job-card {

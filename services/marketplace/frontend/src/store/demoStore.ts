@@ -54,18 +54,29 @@ export const useDemoStore = defineStore('demo', () => {
     return { ...obj, personas } as DemoConfig;
   }
 
+  async function tryFallback(): Promise<DemoConfig> {
+    const res = await axios.get('/demo.json');
+    return normalizeConfig(res.data);
+  }
+
   async function load() {
     loading.value = true;
     error.value = null;
     try {
       const res = await axios.get('/api/config/demo');
-      config.value = normalizeConfig(res.data);
+      const normalized = normalizeConfig(res.data);
+      // Validate: API may return HTML (SPA fallback) instead of JSON
+      const hasEmployers = Array.isArray(normalized.personas) && normalized.personas.some((p) => p.type === 'Employer');
+      if (!hasEmployers) {
+        config.value = await tryFallback();
+      } else {
+        config.value = normalized;
+      }
       return config.value;
     } catch (e) {
       // Fallback to embedded samples when API is unavailable (static deployment, preview)
       try {
-        const fallback = await axios.get('/demo.json');
-        config.value = normalizeConfig(fallback.data);
+        config.value = await tryFallback();
         return config.value;
       } catch (fallbackErr) {
         error.value = e as Error;

@@ -63,27 +63,27 @@ export const useDemoStore = defineStore('demo', () => {
   async function load() {
     loading.value = true;
     error.value = null;
+    // Bundled data ensures app works when API/demo.json return 502
+    const bundled = normalizeConfig(embeddedDemo);
     try {
-      const res = await axios.get('/api/config/demo');
-      const normalized = normalizeConfig(res.data);
-      // Validate: API may return HTML (SPA fallback) instead of JSON
-      const hasEmployers = Array.isArray(normalized.personas) && normalized.personas.some((p) => p.type === 'Employer');
-      if (!hasEmployers) {
-        config.value = await tryFallback();
-      } else {
-        config.value = normalized;
-      }
-      return config.value;
-    } catch (e) {
-      // Fallback to /demo.json when API is unavailable
       try {
-        config.value = await tryFallback();
-        return config.value;
+        const res = await axios.get('/api/config/demo');
+        const normalized = normalizeConfig(res.data);
+        const hasEmployers = Array.isArray(normalized.personas) && normalized.personas.some((p) => p.type === 'Employer');
+        if (hasEmployers) {
+          config.value = normalized;
+          return config.value;
+        }
       } catch {
-        // Ultimate fallback: use demo data bundled at build time (works when API and /demo.json return 502)
-        config.value = normalizeConfig(embeddedDemo);
-        return config.value;
+        try {
+          config.value = await tryFallback();
+          return config.value;
+        } catch {
+          // /demo.json also failed (502, etc.)
+        }
       }
+      config.value = bundled;
+      return config.value;
     } finally {
       loading.value = false;
     }

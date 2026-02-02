@@ -51,13 +51,13 @@
           <i :class="['pi', item.icon]"></i>
         </router-link>
       </div>
-      <div v-if="showSearch" class="floating-bar-search">
+      <div class="floating-bar-search">
         <div class="search-bar">
           <i class="pi pi-search"></i>
           <input
             :value="searchQuery"
             type="text"
-            placeholder="Search jobs or employers..."
+            placeholder="Search"
             class="search-input"
             @input="onSearchInput"
           />
@@ -119,8 +119,6 @@ const currentMarketplaceType = computed(() => {
   if (route.path.startsWith('/education')) return 'education';
   return '';
 });
-
-const showSearch = computed(() => route.path === '/' || route.path.startsWith('/job/'));
 
 const searchQuery = computed({
   get: () => (route.query.q as string) || '',

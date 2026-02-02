@@ -1,0 +1,24 @@
+@use "sass:color";
+
+// DigiCred Theme - consistent with tenant-ui
+$marketplace-primary: #003366;
+$marketplace-text-on-primary: #ffffff;
+$marketplace-secondary: #3c5973;
+$marketplace-accent: #fcba19;
+$marketplace-accent-alt: #6666cc;
+$marketplace-secondary-active: color.adjust($marketplace-secondary, $lightness: -10%);
+
+// Backgrounds
+$marketplace-bg: #F5F5F5;
+$marketplace-bg-card: #ffffff;
+$marketplace-panel-border: #DEE2E6;
+
+// Text
+$marketplace-text: #424242;
+$marketplace-text-muted: #6c757d;
+$marketplace-link: #3a5b8b;
+
+// Status
+$marketplace-success: #336C37;
+$marketplace-danger: #F84949;
+$marketplace-warning: #cf9605;

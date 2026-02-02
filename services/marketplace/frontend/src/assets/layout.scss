@@ -1,0 +1,95 @@
+@use 'variables.scss' as *;
+
+// Mobile-first PWA layout - Uber Eats style
+.marketplace-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-height: 100dvh;
+  background-color: $marketplace-bg;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.marketplace-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 80px; // Space for bottom nav
+}
+
+// Bottom navigation - Uber Eats style
+.marketplace-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  background: $marketplace-bg-card;
+  border-top: 1px solid $marketplace-panel-border;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.marketplace-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 8px;
+  color: $marketplace-text-muted;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: color 0.2s;
+  cursor: pointer;
+  border: none;
+  background: none;
+
+  &.active {
+    color: $marketplace-primary;
+  }
+
+  .nav-icon {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+}
+
+// Header
+.marketplace-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: $marketplace-primary;
+  color: $marketplace-text-on-primary;
+  padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.marketplace-header-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+// Card styles for job listings
+.marketplace-card {
+  background: $marketplace-bg-card;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  margin-bottom: 12px;
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}

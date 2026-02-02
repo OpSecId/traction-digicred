@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "Apply Utopia (Dev)",
+    "shortName": "Apply Dev",
+    "description": "Discover jobs and manage your career with Apply Utopia - Development",
+    "domain": "http://localhost:5175",
+    "themeColor": "#003366",
+    "backgroundColor": "#F5F5F5"
+  },
+  "api": {
+    "baseUrl": "/api"
+  },
+  "features": {
+    "offlineMode": true,
+    "pushNotifications": false
+  }
+}

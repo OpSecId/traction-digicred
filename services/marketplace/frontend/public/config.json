@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "Apply Utopia",
+    "shortName": "Apply Utopia",
+    "description": "Discover jobs and manage your career with Apply Utopia",
+    "domain": "https://marketplace.example.com",
+    "themeColor": "#003366",
+    "backgroundColor": "#F5F5F5"
+  },
+  "api": {
+    "baseUrl": "/api"
+  },
+  "features": {
+    "offlineMode": true,
+    "pushNotifications": false
+  }
+}

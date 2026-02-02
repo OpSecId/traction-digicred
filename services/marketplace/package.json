@@ -6,7 +6,7 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:frontend\"",
     "dev:server": "ts-node src/server.ts",
     "dev:frontend": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
+    "build": "node scripts/embed-demo.js && cd frontend && npm run build",
     "preview": "cd frontend && npm run preview",
     "start": "node dist/server.js",
     "build:all": "cd frontend && npm run build && cd .. && tsc"

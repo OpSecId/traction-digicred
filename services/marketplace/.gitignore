@@ -5,6 +5,9 @@ node_modules/
 frontend/dist/
 frontend/dev-dist/
 
+# Generated (from config/demo.yaml)
+frontend/public/demo.json
+
 # Environment and local config (never commit secrets)
 .env
 .env.local

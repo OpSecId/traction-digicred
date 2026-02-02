@@ -48,18 +48,24 @@ export const useDemoStore = defineStore('demo', () => {
     return allJobs.value.slice(0, 6);
   });
 
+  function normalizeConfig(data: unknown): DemoConfig {
+    const obj = data && typeof data === 'object' ? (data as Record<string, unknown>) : {};
+    const personas = Array.isArray(obj.personas) ? obj.personas : [];
+    return { ...obj, personas } as DemoConfig;
+  }
+
   async function load() {
     loading.value = true;
     error.value = null;
     try {
       const res = await axios.get('/api/config/demo');
-      config.value = res.data;
+      config.value = normalizeConfig(res.data);
       return config.value;
     } catch (e) {
       // Fallback to embedded samples when API is unavailable (static deployment, preview)
       try {
         const fallback = await axios.get('/demo.json');
-        config.value = fallback.data;
+        config.value = normalizeConfig(fallback.data);
         return config.value;
       } catch (fallbackErr) {
         error.value = e as Error;

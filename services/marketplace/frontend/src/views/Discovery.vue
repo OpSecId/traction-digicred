@@ -103,7 +103,6 @@
       <div v-if="showShareModal" class="modal-overlay" @click.self="closeShareModal">
         <div class="modal-content share-modal share-modal-branded">
           <div class="share-modal-backdrop" />
-          <img src="/img/digicred/logo-marketplace.svg" alt="Apply Utopia" class="share-modal-logo" />
           <div class="share-modal-content">
           <div class="modal-header">
             <h3>Share your skills</h3>
@@ -687,17 +686,6 @@ function establishmentInitials(name: string): string {
   z-index: 0;
   background: linear-gradient(135deg, rgba(0, 51, 102, 0.97) 0%, rgba(60, 89, 115, 0.98) 50%, rgba(102, 102, 204, 0.96) 100%);
   pointer-events: none;
-}
-
-.share-modal-logo {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  height: 32px;
-  width: auto;
-  z-index: 2;
-  opacity: 0.95;
-  filter: brightness(0) invert(1);
 }
 
 .share-modal-content {

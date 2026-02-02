@@ -141,7 +141,7 @@ function onSearchInput(e: Event) {
 }
 
 const navItems = [
-  { path: '/', label: 'Discover', icon: 'pi-compass', nav: 'discover' },
+  { path: '/', label: 'Channel', icon: 'pi-compass', nav: 'discover' },
   { path: '/employer', label: 'Employer', icon: 'pi-briefcase', nav: 'employer' },
 ];
 

@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import axios from 'axios';
 import type { JobWithEmployer } from '@/types/demo';
 import type { DemoCredential } from '@/types/credentials';
+import embeddedDemo from '@/data/embeddedDemo.json';
 
 const STORAGE_KEY = 'marketplace-transcript-shared';
 const RECOMMENDATIONS_KEY = 'marketplace-recommendations';
@@ -36,6 +37,23 @@ export const useTranscriptStore = defineStore('transcript', () => {
     { deep: true }
   );
 
+  function getCredentialsFromEmbedded(): DemoCredential[] {
+    const config = embeddedDemo as { personas?: Array<{ type: string; credentials?: Array<Record<string, unknown>> }> };
+    const student = (config.personas || []).find((p) => p.type === 'Student');
+    const raw = (student?.credentials || []).filter(
+      (c) => c.type && String(c.type).toLowerCase().includes('transcript')
+    );
+    return raw.map((c) => ({
+      id: String(c.id),
+      type: String(c.type),
+      name: String(c.name),
+      establishmentName: c.establishmentName as string | undefined,
+      backgroundImage: c.image as string | undefined,
+      logo: c.logo as string | undefined,
+      credentialSubject: c.credentialSubject as DemoCredential['credentialSubject'],
+    }));
+  }
+
   async function fetchPresentationCredentials() {
     fetchingCredentials.value = true;
     error.value = null;
@@ -43,12 +61,42 @@ export const useTranscriptStore = defineStore('transcript', () => {
       const res = await axios.get<{ credentials: DemoCredential[] }>('/api/presentation-request/credentials');
       availableCredentials.value = res.data.credentials ?? [];
       return availableCredentials.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
+    } catch {
+      // Fallback: use embedded demo when API returns 500 (static deployment, no backend)
+      availableCredentials.value = getCredentialsFromEmbedded();
+      return availableCredentials.value;
     } finally {
       fetchingCredentials.value = false;
     }
+  }
+
+  function getRecommendationsFromEmbedded(): JobWithEmployer[] {
+    const config = embeddedDemo as {
+      personas?: Array<{
+        id: string;
+        type: string;
+        name: string;
+        image?: string;
+        logo?: string;
+        jobPostings?: Array<Record<string, unknown>>;
+      }>;
+    };
+    const allJobs: JobWithEmployer[] = [];
+    for (const persona of config.personas || []) {
+      if (persona.type === 'Employer' && persona.jobPostings) {
+        for (const job of persona.jobPostings) {
+          allJobs.push({
+            ...job,
+            employerId: persona.id,
+            employerName: persona.name,
+            employerImage: persona.image,
+            employerLogo: persona.logo,
+          } as JobWithEmployer);
+        }
+      }
+    }
+    const featured = allJobs.filter((j) => (j as { featured?: boolean }).featured);
+    return featured.length > 0 ? featured : allJobs.slice(0, 8);
   }
 
   async function shareTranscript(selectedCredentialIds: string[]) {
@@ -62,9 +110,12 @@ export const useTranscriptStore = defineStore('transcript', () => {
       transcriptShared.value = true;
       availableCredentials.value = [];
       return customRecommendations.value;
-    } catch (e) {
-      error.value = e as Error;
-      throw e;
+    } catch {
+      // Fallback: use embedded demo when API returns 500 (static deployment)
+      customRecommendations.value = getRecommendationsFromEmbedded();
+      transcriptShared.value = true;
+      availableCredentials.value = [];
+      return customRecommendations.value;
     } finally {
       loading.value = false;
     }

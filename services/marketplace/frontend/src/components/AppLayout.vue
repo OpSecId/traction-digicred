@@ -1,5 +1,5 @@
 <template>
-  <div class="marketplace-app">
+  <div class="marketplace-app" :class="{ 'has-floating-bar': showFloatingBar }">
     <header class="marketplace-header">
       <div class="marketplace-header-title">
         <img
@@ -37,8 +37,8 @@
       </router-link>
     </nav>
 
-    <!-- Floating bar: type tabs (2 each side) + search in center -->
-    <div class="floating-bar">
+    <!-- Floating bar: only on main category pages (not job details, employer) -->
+    <div v-if="showFloatingBar" class="floating-bar">
       <div class="floating-bar-tabs">
         <router-link
           v-for="item in leftTabs"
@@ -109,6 +109,11 @@ const rightTabs = [
   { path: '/services', label: 'Services', icon: 'pi-wrench', type: 'services' },
   { path: '/education', label: 'Education', icon: 'pi-book', type: 'education' },
 ];
+
+const showFloatingBar = computed(() => {
+  const p = route.path;
+  return p === '/' || p === '/scholarships' || p === '/services' || p === '/education';
+});
 
 const currentMarketplaceType = computed(() => {
   const type = route.meta.marketplaceType as string | undefined;
@@ -249,7 +254,7 @@ function isActive(nav: string) {
   z-index: 100;
   padding: 12px 16px 24px;
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0));
-  background: linear-gradient(to top, $marketplace-bg 60%, transparent);
+  background: $marketplace-bg;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -300,11 +305,11 @@ function isActive(nav: string) {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: white;
+  background: $marketplace-bg-card;
   border-radius: 24px;
   padding: 10px 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border: 2px solid transparent;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid $marketplace-panel-border;
   transition: all 0.3s ease;
 
   i {

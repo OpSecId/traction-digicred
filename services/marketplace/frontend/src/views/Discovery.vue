@@ -227,19 +227,6 @@
         <p>No jobs match your search. Try a different search term.</p>
       </div>
     </div>
-
-    <!-- Floating search bar at bottom -->
-    <div class="floating-search-bar">
-      <div class="search-bar">
-        <i class="pi pi-search"></i>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search jobs or employers..."
-          class="search-input"
-        />
-      </div>
-    </div>
   </div>
 </template>
 
@@ -255,7 +242,6 @@ const route = useRoute();
 const demoStore = useDemoStore();
 const transcriptStore = useTranscriptStore();
 
-const searchQuery = ref('');
 const showShareModal = ref(false);
 const shareModalStep = ref<'confirm' | 'loading' | 'select'>('confirm');
 const selectedCredentialId = ref<string | null>(null);

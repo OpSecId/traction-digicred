@@ -12,12 +12,30 @@ const corsOrigin = process.env.CORS_ORIGIN;
 app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map((o) => o.trim()) } : {}));
 app.use(express.json());
 
-// Serve demo config from YAML
+function loadDemoConfig(): unknown {
+  const candidates = [
+    path.join(__dirname, '../config/demo.yaml'),
+    path.join(process.cwd(), 'config/demo.yaml'),
+    path.join(__dirname, '../frontend/public/demo.json'),
+    path.join(process.cwd(), 'frontend/public/demo.json'),
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        const contents = fs.readFileSync(p, 'utf8');
+        return p.endsWith('.json') ? JSON.parse(contents) : yaml.load(contents);
+      }
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(`Demo config not found. Tried: ${candidates.join(', ')}`);
+}
+
+// Serve demo config from YAML or JSON fallback
 app.get('/api/config/demo', (_req, res) => {
   try {
-    const configPath = path.join(__dirname, '../config/demo.yaml');
-    const fileContents = fs.readFileSync(configPath, 'utf8');
-    const config = yaml.load(fileContents);
+    const config = loadDemoConfig();
     res.json(config);
   } catch (err) {
     console.error('Error loading demo config:', err);
@@ -28,9 +46,7 @@ app.get('/api/config/demo', (_req, res) => {
 // Get credentials for presentation request (demo: student's transcript-type credentials only)
 app.get('/api/presentation-request/credentials', (_req, res) => {
   try {
-    const configPath = path.join(__dirname, '../config/demo.yaml');
-    const fileContents = fs.readFileSync(configPath, 'utf8');
-    const config = yaml.load(fileContents) as {
+    const config = loadDemoConfig() as {
       personas: Array<{
         type: string;
         credentials?: Array<{
@@ -68,9 +84,7 @@ app.get('/api/presentation-request/credentials', (_req, res) => {
 // In production: receives presentation proof, analyzes transcript credential, returns matching jobs
 app.post('/api/recommendations', (_req, res) => {
   try {
-    const configPath = path.join(__dirname, '../config/demo.yaml');
-    const fileContents = fs.readFileSync(configPath, 'utf8');
-    const config = yaml.load(fileContents) as {
+    const config = loadDemoConfig() as {
       personas: Array<{
         id: string;
         type: string;

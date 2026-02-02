@@ -133,6 +133,11 @@ export default defineConfig({
     host: '0.0.0.0',
     allowedHosts: getAllowedHosts(),
     proxy: {
+      '/api/config/demo': {
+        target: 'http://localhost:5174',
+        changeOrigin: true,
+        bypass: () => '/demo.json', // serve demo.json when backend not running
+      },
       '/api': {
         target: 'http://localhost:5174',
         changeOrigin: true,

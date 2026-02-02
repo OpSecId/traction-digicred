@@ -12,9 +12,7 @@
     <!-- Fixed recommendation widget -->
     <section v-if="!demoStore.loading && !demoStore.error" class="recommended-section-fixed-container">
       <div class="category-section recommended-section recommended-section-fixed">
-        <!-- Spacer when header hidden (same height as header) so section height stays constant -->
-        <div v-if="!transcriptStore.transcriptShared" class="recommended-header-spacer" aria-hidden="true"></div>
-        <div v-else class="recommended-header">
+        <div v-if="transcriptStore.transcriptShared" class="recommended-header">
           <h2 class="section-title recommended-title">
             <span class="recommended-title-icon" aria-hidden="true"><i class="pi pi-star-fill"></i></span>
             Recommended for you
@@ -247,12 +245,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useDemoStore } from '@/store/demoStore';
 import { useTranscriptStore } from '@/store/transcriptStore';
 import type { JobWithEmployer } from '@/types/demo';
 
 const router = useRouter();
+const route = useRoute();
 const demoStore = useDemoStore();
 const transcriptStore = useTranscriptStore();
 
@@ -303,7 +302,7 @@ const visibleCategories = computed(() => {
 
 const filteredJobs = computed(() => {
   let jobs = demoStore.allJobs;
-  const q = searchQuery.value.trim().toLowerCase();
+  const q = ((route.query.q as string) || '').trim().toLowerCase();
   if (q) {
     jobs = jobs.filter(
       (j) =>
@@ -422,58 +421,6 @@ function establishmentInitials(name: string): string {
   opacity: 0.2;
 }
 
-.floating-search-bar {
-  position: fixed;
-  bottom: 80px; /* Above bottom nav (64px) + spacing */
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 32px);
-  max-width: 600px;
-  z-index: 100;
-  padding: 0 16px;
-}
-
-.search-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: white;
-  border-radius: 24px;
-  padding: 12px 18px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
-
-  i {
-    color: $marketplace-text-muted;
-    font-size: 1.1rem;
-    transition: color 0.3s ease;
-  }
-
-  &:focus-within {
-    border-color: $marketplace-primary;
-    box-shadow: 0 6px 24px rgba(0, 51, 102, 0.25), 0 4px 12px rgba(0, 51, 102, 0.15);
-    transform: translateY(-2px);
-
-    i {
-      color: $marketplace-primary;
-    }
-  }
-}
-
-.search-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 0.95rem;
-  font-family: inherit;
-
-  &::placeholder {
-    color: $marketplace-text-muted;
-  }
-}
-
 /* Fixed recommendation section container */
 .recommended-section-fixed-container {
   position: sticky;
@@ -508,18 +455,6 @@ function establishmentInitials(name: string): string {
   margin-bottom: 0;
   padding-bottom: 0;
   border-bottom: none;
-}
-
-/* Fixed header height so spacer matches when header is hidden */
-.recommended-header,
-.recommended-header-spacer {
-  height: 36px;
-  min-height: 36px;
-  flex-shrink: 0;
-}
-
-.recommended-header-spacer {
-  margin-bottom: 8px;
 }
 
 .recommended-header {

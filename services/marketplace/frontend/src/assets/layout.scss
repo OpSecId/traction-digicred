@@ -15,49 +15,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 80px; // Space for bottom nav
-}
-
-// Bottom navigation - Uber Eats style
-.marketplace-bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 64px;
-  padding-bottom: env(safe-area-inset-bottom, 0);
-  background: $marketplace-bg-card;
-  border-top: 1px solid $marketplace-panel-border;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 1000;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
-}
-
-.marketplace-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  padding: 8px;
-  color: $marketplace-text-muted;
-  font-size: 0.75rem;
-  font-weight: 500;
-  transition: color 0.2s;
-  cursor: pointer;
-  border: none;
-  background: none;
-
-  &.active {
-    color: $marketplace-primary;
-  }
-
-  .nav-icon {
-    font-size: 1.5rem;
-    margin-bottom: 4px;
-  }
+  padding-bottom: 100px; /* Space for floating bar */
 }
 
 // Header

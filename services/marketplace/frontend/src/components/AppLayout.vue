@@ -8,20 +8,74 @@
           class="header-logo"
         />
       </div>
+      <button
+        class="burger-btn"
+        aria-label="Open menu"
+        @click="menuOpen = !menuOpen"
+      >
+        <i class="pi pi-bars"></i>
+      </button>
     </header>
 
-    <nav class="marketplace-type-nav">
+    <div
+      v-if="menuOpen"
+      class="burger-overlay"
+      aria-hidden="true"
+      @click="menuOpen = false"
+    />
+    <nav class="burger-menu" :class="{ open: menuOpen }">
       <router-link
-        v-for="item in marketplaceTypes"
+        v-for="item in navItems"
         :key="item.path"
         :to="item.path"
-        class="marketplace-type-item"
-        :class="{ active: currentMarketplaceType === item.type }"
+        class="burger-menu-item"
+        :class="{ active: isActive(item.nav) }"
+        @click="menuOpen = false"
       >
-        <i :class="['pi', item.icon, 'type-icon']"></i>
+        <i :class="['pi', item.icon, 'burger-icon']"></i>
         <span>{{ item.label }}</span>
       </router-link>
     </nav>
+
+    <!-- Floating bar: type tabs (2 each side) + search in center -->
+    <div class="floating-bar">
+      <div class="floating-bar-tabs">
+        <router-link
+          v-for="item in leftTabs"
+          :key="item.path"
+          :to="item.path"
+          class="type-circle"
+          :class="{ active: currentMarketplaceType === item.type }"
+          :title="item.label"
+        >
+          <i :class="['pi', item.icon]"></i>
+        </router-link>
+      </div>
+      <div v-if="showSearch" class="floating-bar-search">
+        <div class="search-bar">
+          <i class="pi pi-search"></i>
+          <input
+            :value="searchQuery"
+            type="text"
+            placeholder="Search jobs or employers..."
+            class="search-input"
+            @input="onSearchInput"
+          />
+        </div>
+      </div>
+      <div class="floating-bar-tabs">
+        <router-link
+          v-for="item in rightTabs"
+          :key="item.path"
+          :to="item.path"
+          class="type-circle"
+          :class="{ active: currentMarketplaceType === item.type }"
+          :title="item.label"
+        >
+          <i :class="['pi', item.icon]"></i>
+        </router-link>
+      </div>
+    </div>
 
     <main class="marketplace-content">
       <router-view v-slot="{ Component }">
@@ -36,31 +90,22 @@
         </Suspense>
       </router-view>
     </main>
-
-    <nav class="marketplace-bottom-nav">
-      <router-link
-        v-for="item in navItems"
-        :key="item.path"
-        :to="item.path"
-        class="marketplace-nav-item"
-        :class="{ active: isActive(item.nav) }"
-      >
-        <i :class="['pi', item.icon, 'nav-icon']"></i>
-        <span>{{ item.label }}</span>
-      </router-link>
-    </nav>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
+const router = useRouter();
+const menuOpen = ref(false);
 
-const marketplaceTypes = [
+const leftTabs = [
   { path: '/', label: 'Jobs', icon: 'pi-briefcase', type: 'jobs' },
   { path: '/scholarships', label: 'Scholarships', icon: 'pi-gift', type: 'scholarships' },
+];
+const rightTabs = [
   { path: '/services', label: 'Services', icon: 'pi-wrench', type: 'services' },
   { path: '/education', label: 'Education', icon: 'pi-book', type: 'education' },
 ];
@@ -75,13 +120,30 @@ const currentMarketplaceType = computed(() => {
   return '';
 });
 
+const showSearch = computed(() => route.path === '/' || route.path.startsWith('/job/'));
+
+const searchQuery = computed({
+  get: () => (route.query.q as string) || '',
+  set: (v: string) => {
+    const query = { ...route.query };
+    if (v.trim()) query.q = v.trim();
+    else delete query.q;
+    router.replace({ path: route.path, query });
+  },
+});
+
+function onSearchInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  searchQuery.value = target.value;
+}
+
 const navItems = [
   { path: '/', label: 'Discover', icon: 'pi-compass', nav: 'discover' },
   { path: '/employer', label: 'Employer', icon: 'pi-briefcase', nav: 'employer' },
 ];
 
 function isActive(nav: string) {
-  if (nav === 'discover') return route.path === '/' || route.path.startsWith('/scholarships') || route.path.startsWith('/services') || route.path.startsWith('/education');
+  if (nav === 'discover') return route.path === '/' || route.path.startsWith('/scholarships') || route.path.startsWith('/services') || route.path.startsWith('/education') || route.path.startsWith('/job/');
   if (nav === 'employer') return route.path.startsWith('/employer');
   return false;
 }
@@ -96,44 +158,177 @@ function isActive(nav: string) {
   filter: brightness(0) invert(1); /* white on primary blue header */
 }
 
-.marketplace-type-nav {
+.burger-btn {
   display: flex;
-  align-items: stretch;
-  justify-content: space-around;
-  gap: 4px;
-  padding: 10px 8px 12px;
-  background: $marketplace-bg-card;
-  border-bottom: 1px solid $marketplace-panel-border;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-.marketplace-type-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 8px 4px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: $marketplace-text-muted;
-  text-decoration: none;
-  border-radius: 10px;
-  transition: color 0.2s, background 0.2s;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: $marketplace-text-on-primary;
+  font-size: 1.5rem;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
 
   &:hover {
-    color: $marketplace-primary;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
+
+.burger-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1100;
+  animation: fadeIn 0.2s ease;
+}
+
+.burger-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 260px;
+  max-width: 85vw;
+  height: 100%;
+  background: $marketplace-bg-card;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: 1200;
+  padding: calc(60px + env(safe-area-inset-top, 0)) 0 env(safe-area-inset-bottom, 0);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  overflow-y: auto;
+
+  &.open {
+    transform: translateX(0);
+  }
+}
+
+.burger-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: $marketplace-text;
+  text-decoration: none;
+  border-bottom: 1px solid $marketplace-panel-border;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
     background: rgba(0, 51, 102, 0.06);
+    color: $marketplace-primary;
   }
 
   &.active {
-    color: $marketplace-primary;
     background: rgba(0, 51, 102, 0.08);
+    color: $marketplace-primary;
   }
 
-  .type-icon {
-    font-size: 1.35rem;
+  .burger-icon {
+    font-size: 1.25rem;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Floating bar: type circles + search */
+.floating-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 12px 16px 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0));
+  background: linear-gradient(to top, $marketplace-bg 60%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.floating-bar-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.type-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: $marketplace-bg-card;
+  color: $marketplace-text-muted;
+  text-decoration: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+
+  i {
+    font-size: 1.1rem;
+  }
+
+  &:hover {
+    color: $marketplace-primary;
+    box-shadow: 0 4px 16px rgba(0, 51, 102, 0.2);
+  }
+
+  &.active {
+    color: $marketplace-text-on-primary;
+    background: $marketplace-primary;
+    box-shadow: 0 4px 16px rgba(0, 51, 102, 0.3);
+  }
+}
+
+.floating-bar-search {
+  flex: 1;
+  max-width: 400px;
+  min-width: 120px;
+}
+
+.floating-bar-search .search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border-radius: 24px;
+  padding: 10px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+
+  i {
+    color: $marketplace-text-muted;
+    font-size: 1rem;
+  }
+
+  &:focus-within {
+    border-color: $marketplace-primary;
+    box-shadow: 0 6px 24px rgba(0, 51, 102, 0.2);
+  }
+}
+
+.floating-bar-search .search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  font-family: inherit;
+
+  &::placeholder {
+    color: $marketplace-text-muted;
   }
 }
 

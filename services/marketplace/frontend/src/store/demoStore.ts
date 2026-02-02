@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import axios from 'axios';
 import type { DemoConfig, JobWithEmployer } from '@/types/demo';
+import embeddedDemo from '@/data/embeddedDemo.json';
 
 export const useDemoStore = defineStore('demo', () => {
   const config = ref<DemoConfig | null>(null);
@@ -74,13 +75,14 @@ export const useDemoStore = defineStore('demo', () => {
       }
       return config.value;
     } catch (e) {
-      // Fallback to embedded samples when API is unavailable (static deployment, preview)
+      // Fallback to /demo.json when API is unavailable
       try {
         config.value = await tryFallback();
         return config.value;
-      } catch (fallbackErr) {
-        error.value = e as Error;
-        throw e;
+      } catch {
+        // Ultimate fallback: use demo data bundled at build time (works when API and /demo.json return 502)
+        config.value = normalizeConfig(embeddedDemo);
+        return config.value;
       }
     } finally {
       loading.value = false;

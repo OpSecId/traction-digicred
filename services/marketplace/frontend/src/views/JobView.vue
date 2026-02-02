@@ -403,12 +403,12 @@ function submitApplication() {
 /* Fixed bottom action buttons */
 .fixed-bottom-actions {
   position: fixed;
-  bottom: 64px; /* Above bottom nav bar */
+  bottom: 0;
   left: 0;
   right: 0;
-  background: white;
+  background: $marketplace-bg-card;
   padding: 12px 16px;
-  padding-bottom: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
   z-index: 50;
   display: flex;

@@ -1,5 +1,13 @@
 @use "sass:color";
 
+// Responsive breakpoints
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 1024px;
+$breakpoint-wide: 1280px;
+
+// Content max-width (desktop)
+$content-max-width: 1200px;
+
 // DigiCred Theme - consistent with tenant-ui
 $marketplace-primary: #003366;
 $marketplace-text-on-primary: #ffffff;

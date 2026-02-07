@@ -1,0 +1,40 @@
+@use 'variables.scss' as *;
+
+@mixin hero-banner {
+  position: relative;
+  background: linear-gradient(135deg, $marketplace-primary 0%, $marketplace-secondary 100%);
+  padding: 16px 0 20px;
+  padding-top: calc(16px + env(safe-area-inset-top, 0));
+  margin: 0 -16px 0 -16px;
+  overflow: hidden;
+}
+
+@mixin hero-content {
+  position: relative;
+  z-index: 2;
+  padding: 0 16px;
+
+  h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: white;
+    margin: 0 0 4px 0;
+    line-height: 1.2;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+  }
+}
+
+@mixin hero-image {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 140px;
+  height: 88px;
+  background: url('/img/digicred/loginDash.png') right bottom / contain no-repeat;
+  opacity: 0.2;
+}

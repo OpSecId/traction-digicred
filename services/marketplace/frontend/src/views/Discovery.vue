@@ -103,26 +103,12 @@
 
           <!-- After transcript shared: matching opportunities -->
           <div v-else class="cards-scroll">
-          <div
+          <JobCard
             v-for="job in transcriptStore.customRecommendations"
             :key="job.id"
-            class="job-card"
-            @click="goToJob(job.id)"
-          >
-            <div class="job-card-header" :style="headerStyle(job)" :class="{ 'has-image': job.employerImage }">
-              <span class="job-card-category">{{ job.category }}</span>
-              <div class="employer-avatar" :style="avatarStyle(job.employerName)">
-                <img v-if="job.employerLogo" :src="job.employerLogo" :alt="job.employerName" class="employer-logo" />
-                <span v-else>{{ employerInitials(job.employerName) }}</span>
-              </div>
-            </div>
-            <div class="job-card-body">
-              <h3>{{ job.name }}</h3>
-              <p class="employer-name">{{ job.employerName }}</p>
-              <p class="job-description">{{ job.description }}</p>
-              <span class="job-card-cta">View <i class="pi pi-arrow-right"></i></span>
-            </div>
-          </div>
+            :job="job"
+            @click="goToJob"
+          />
           <div v-if="transcriptStore.customRecommendations.length === 0" class="no-matches">
             No matching opportunities found. Try updating your transcript or clear to browse all opportunities.
           </div>
@@ -207,7 +193,7 @@
                     </div>
                     <div class="credential-card-logo">
                       <img v-if="cred.logo" :src="cred.logo" :alt="cred.establishmentName || cred.name" class="credential-logo-img" />
-                      <span v-else class="credential-logo-initials">{{ establishmentInitials(cred.establishmentName || cred.name) }}</span>
+                      <span v-else class="credential-logo-initials">{{ employerInitials(cred.establishmentName || cred.name) }}</span>
                     </div>
                   </div>
                   <input v-model="selectedCredentialId" type="radio" :value="cred.id" />
@@ -242,36 +228,20 @@
       >
         <h2 class="section-title">{{ category }}</h2>
         <div class="cards-scroll">
-          <div
+          <JobCard
             v-for="job in jobsByCategory(category)"
             :key="job.id"
-            class="job-card"
-            @click="goToJob(job.id)"
-          >
-            <div class="job-card-header" :style="headerStyle(job)" :class="{ 'has-image': job.employerImage }">
-              <span class="job-card-category">{{ job.category }}</span>
-              <div class="employer-avatar" :style="avatarStyle(job.employerName)">
-                <img v-if="job.employerLogo" :src="job.employerLogo" :alt="job.employerName" class="employer-logo" />
-                <span v-else>{{ employerInitials(job.employerName) }}</span>
-              </div>
-            </div>
-            <div class="job-card-body">
-              <h3>{{ job.name }}</h3>
-              <p class="employer-name">{{ job.employerName }}</p>
-              <p class="job-description">{{ job.description }}</p>
-              <span class="job-card-cta">View <i class="pi pi-arrow-right"></i></span>
-            </div>
-          </div>
+            :job="job"
+            @click="goToJob"
+          />
         </div>
       </section>
 
-      <div
+      <StatusMessage
         v-if="visibleCategories.length === 0 && !transcriptStore.transcriptShared"
-        class="empty-state"
-      >
-        <i class="pi pi-inbox"></i>
-        <p>No jobs match your search. Try a different search term.</p>
-      </div>
+        type="empty"
+        message="No jobs match your search. Try a different search term."
+      />
     </div>
   </div>
 </template>
@@ -281,6 +251,9 @@ import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useDemoStore } from '@/store/demoStore';
 import { useTranscriptStore } from '@/store/transcriptStore';
+import { employerInitials } from '@/utils/employerUtils';
+import JobCard from '@/components/JobCard.vue';
+import StatusMessage from '@/components/StatusMessage.vue';
 import type { JobWithEmployer } from '@/types/demo';
 
 const router = useRouter();
@@ -389,107 +362,40 @@ function jobsByCategory(category: string): JobWithEmployer[] {
   return filteredJobs.value.filter((j) => j.category === category);
 }
 
-function employerInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-}
-
-const AVATAR_COLORS = [
-  '#003366',
-  '#3c5973',
-  '#6666cc',
-  '#336C37',
-  '#87623D',
-  '#485773',
-];
-
-function getEmployerColor(employerName: string): string {
-  const hash = employerName.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
-}
-
-function avatarStyle(employerName: string): { backgroundColor: string } {
-  return { backgroundColor: getEmployerColor(employerName) };
-}
-
-function headerStyle(job: { employerName: string; employerImage?: string }): Record<string, string> {
-  if (job.employerImage) {
-    return {
-      backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%), url(${job.employerImage})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    };
-  }
-  const base = getEmployerColor(job.employerName);
-  return {
-    background: `linear-gradient(145deg, ${base} 0%, ${base}cc 100%)`,
-  };
-}
-
 function goToJob(jobId: string) {
   router.push({ name: 'JobView', params: { jobId } });
-}
-
-function establishmentInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 }
 </script>
 
 <style scoped lang="scss">
 @use 'sass:color';
 @use '@/assets/variables.scss' as *;
+@use '@/assets/hero-banner' as hero;
 
 .discovery-page {
   padding: 0 16px;
   padding-bottom: 24px;
+
+  @media (min-width: $breakpoint-desktop) {
+    padding: 0 24px 24px;
+  }
 }
 
 .hero-banner {
-  position: relative;
-  background: linear-gradient(135deg, $marketplace-primary 0%, $marketplace-secondary 100%);
-  padding: 16px 0 20px;
-  padding-top: calc(16px + env(safe-area-inset-top, 0));
-  margin: 0 -16px 0 -16px;
-  overflow: hidden;
+  @include hero.hero-banner;
 }
 
 .hero-content {
-  position: relative;
-  z-index: 2;
-  padding: 0 16px;
-
-  h1 {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: white;
-    margin: 0 0 4px 0;
-    line-height: 1.2;
-  }
-
-  p {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.9);
-    margin: 0;
+  @include hero.hero-content;
+  @media (min-width: $breakpoint-desktop) {
+    padding: 0 24px;
+    h1 { font-size: 1.75rem; }
+    p { font-size: 1rem; }
   }
 }
 
 .hero-image {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 140px;
-  height: 88px;
-  background: url('/img/digicred/loginDash.png') right bottom / contain no-repeat;
-  opacity: 0.2;
+  @include hero.hero-image;
 }
 
 /* Fixed recommendation section container */
@@ -1283,153 +1189,24 @@ function establishmentInitials(name: string): string {
   &::-webkit-scrollbar {
     display: none;
   }
-}
 
-.job-card {
-  flex: 0 0 220px;
-  width: 220px;
-  height: 220px;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 51, 102, 0.06);
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  flex-direction: column;
-
-  &:active {
-    transform: scale(0.98);
-    box-shadow: 0 1px 8px rgba(0, 51, 102, 0.08);
+  @media (min-width: $breakpoint-desktop) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    gap: 16px;
   }
 }
 
-.job-card-header {
-  height: 64px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.08) 100%);
-    pointer-events: none;
-  }
-
-  &.has-image::after {
-    background: linear-gradient(to bottom, transparent 20%, rgba(0, 0, 0, 0.4) 100%);
-  }
-}
-
-.job-card-category {
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  align-self: flex-start;
-  position: relative;
-  z-index: 1;
-}
-
-.job-card-header.has-image .job-card-category {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-}
-
-.employer-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 700;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  align-self: flex-end;
-
-  .employer-logo {
+/* cards-scroll children (JobCard) need desktop override */
+.cards-scroll :deep(.job-card) {
+  @media (min-width: $breakpoint-desktop) {
+    flex: none;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.job-card-body {
-  flex: 1;
-  min-height: 0;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-}
-
-.job-card-body h3 {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: $marketplace-primary;
-  margin: 0 0 4px 0;
-  line-height: 1.2;
-}
-
-.employer-name {
-  font-size: 0.7rem;
-  color: $marketplace-text-muted;
-  margin: 0 0 4px 0;
-  font-weight: 500;
-}
-
-.job-description {
-  font-size: 0.75rem;
-  color: $marketplace-text;
-  line-height: 1.3;
-  margin: 0 0 8px 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 2.6em; /* reserve space for 2 full lines so second line isn't cut */
-}
-
-.job-card-cta {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: $marketplace-accent-alt;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: auto;
-  flex-shrink: 0;
-  padding-top: 4px;
-}
-
-.loading-state,
-.error-state,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1rem;
-  color: $marketplace-text-muted;
-  text-align: center;
-
-  i {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
-    color: $marketplace-primary;
-  }
-
-  .error-state i {
-    color: $marketplace-danger;
+    min-width: 0;
+    height: auto;
   }
 }
 </style>

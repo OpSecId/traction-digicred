@@ -1,0 +1,264 @@
+@use 'variables.scss' as *;
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: $marketplace-text;
+  margin: 0;
+}
+
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid $marketplace-panel-border;
+  background: transparent;
+  color: $marketplace-primary;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 51, 102, 0.06);
+    border-color: rgba(0, 51, 102, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  color: $marketplace-text-muted;
+
+  i {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    opacity: 0.6;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+}
+
+.card-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  @media (min-width: $breakpoint-desktop) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+}
+
+.admin-card {
+  padding: 16px;
+
+  &.processed {
+    opacity: 0.85;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $marketplace-primary;
+    margin: 0 0 4px 0;
+  }
+
+  .card-email {
+    font-size: 0.9rem;
+    color: $marketplace-text-muted;
+    margin: 0;
+  }
+
+  .card-body {
+    margin-bottom: 16px;
+
+    p {
+      font-size: 0.9rem;
+      color: $marketplace-text-muted;
+      margin: 0 0 6px 0;
+    }
+
+    .date {
+      font-size: 0.8rem;
+      margin-top: 8px;
+    }
+  }
+
+  .card-meta,
+  .ref-id {
+    font-size: 0.75rem;
+    color: $marketplace-text-muted;
+  }
+
+  .ref-id {
+    padding: 2px 6px;
+    background: rgba(0, 51, 102, 0.08);
+    border-radius: 4px;
+    color: $marketplace-primary;
+  }
+
+  .type-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+
+    &.employer {
+      background: rgba(0, 51, 102, 0.12);
+      color: $marketplace-primary;
+    }
+
+    &.scholarship-admin {
+      background: rgba(51, 108, 55, 0.12);
+      color: $marketplace-success;
+    }
+
+    &.education-institution {
+      background: rgba(102, 102, 204, 0.12);
+      color: $marketplace-accent-alt;
+    }
+  }
+
+  .status-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+
+    &.approved {
+      background: rgba(51, 108, 55, 0.15);
+      color: $marketplace-success;
+    }
+
+    &.rejected {
+      background: rgba(248, 73, 73, 0.12);
+      color: $marketplace-danger;
+    }
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .btn-approve,
+  .btn-reject {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+  }
+
+  .btn-approve {
+    background: $marketplace-success;
+    color: white;
+  }
+
+  .btn-reject {
+    background: transparent;
+    color: $marketplace-danger;
+    border: 1px solid rgba(248, 73, 73, 0.4);
+  }
+
+  .kyc-details {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid $marketplace-panel-border;
+
+    .intended-use {
+      font-style: italic;
+      margin-top: 8px;
+    }
+  }
+}
+
+.section {
+  margin-top: 32px;
+}
+
+// Admin tables
+.admin-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid $marketplace-panel-border;
+  background: $marketplace-bg-card;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  th,
+  td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid $marketplace-panel-border;
+    vertical-align: middle;
+  }
+
+  th {
+    font-weight: 600;
+    color: $marketplace-text-muted;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:hover td {
+    background: rgba(0, 51, 102, 0.02);
+  }
+
+  .cell-actions {
+    white-space: nowrap;
+  }
+
+  .cell-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}

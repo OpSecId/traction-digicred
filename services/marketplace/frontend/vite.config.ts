@@ -40,6 +40,7 @@ function getAllowedHosts(): string[] | true {
 }
 
 export default defineConfig({
+  envDir: path.resolve(__dirname, '..'),
   plugins: [
     vue(),
     VitePWA({
@@ -128,19 +129,41 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx,vue}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: ['node_modules/', 'src/test/', '**/*.d.ts', '**/*.spec.ts', '**/*.test.ts'],
+    },
+  },
   server: {
     port: 5175,
     host: '0.0.0.0',
     allowedHosts: getAllowedHosts(),
     proxy: {
       '/api/config/demo': {
-        target: 'http://localhost:5174',
+        target: process.env.VITE_API_TARGET || 'http://127.0.0.1:5174',
         changeOrigin: true,
         bypass: () => '/demo.json', // serve demo.json when backend not running
       },
       '/api': {
-        target: 'http://localhost:5174',
+        target: process.env.VITE_API_TARGET || 'http://127.0.0.1:5174',
         changeOrigin: true,
+        secure: false,
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            if (proxyRes.statusCode && proxyRes.statusCode >= 400) {
+              console.warn('[vite proxy] API error:', proxyRes.statusCode, proxyRes.url);
+            }
+          });
+          proxy.on('error', (err, req, res) => {
+            console.error('[vite proxy] API proxy error:', err.message);
+          });
+        },
       },
     },
   },

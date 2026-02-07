@@ -489,6 +489,34 @@
       ]
     }
   ],
+  "adminLogins": [
+    {
+      "email": "admin",
+      "password": "123"
+    }
+  ],
+  "employerLogins": [
+    {
+      "employerId": "urn:uuid:123e4567-e89b-12d3-a456-426614174005",
+      "email": "hr@pizzautopia.com",
+      "password": "demo123"
+    },
+    {
+      "employerId": "urn:uuid:123e4567-e89b-12d3-a456-426614174007",
+      "email": "hr@loc.gov",
+      "password": "demo123"
+    },
+    {
+      "employerId": "urn:uuid:123e4567-e89b-12d3-a456-426614174010",
+      "email": "careers@metrogeneral.org",
+      "password": "demo123"
+    },
+    {
+      "employerId": "urn:uuid:123e4567-e89b-12d3-a456-426614174020",
+      "email": "jobs@techflow.io",
+      "password": "demo123"
+    }
+  ],
   "tenantRequests": [
     {
       "id": "req-1",
@@ -496,7 +524,18 @@
       "name": "TechCorp Industries",
       "email": "hr@techcorp.example.com",
       "submittedAt": "2025-01-28T10:00:00Z",
-      "status": "pending"
+      "status": "pending",
+      "contactName": "Sarah Chen",
+      "contactTitle": "HR Director",
+      "contactPhone": "+1 (303) 555-0123",
+      "registrationId": "84-1234567",
+      "jurisdiction": "Delaware, US",
+      "businessAddress": "1500 Market St, Denver, CO 80202",
+      "website": "https://techcorp.example.com",
+      "industry": "Technology",
+      "intendedUse": "Post software engineering and product roles; receive credential-backed applications",
+      "hiringVolume": "51-200",
+      "primaryIndustries": "Healthcare, Technology"
     },
     {
       "id": "req-2",
@@ -504,7 +543,14 @@
       "name": "State Education Foundation",
       "email": "admin@stateedu.org",
       "submittedAt": "2025-01-27T14:30:00Z",
-      "status": "pending"
+      "status": "pending",
+      "contactName": "Michael Torres",
+      "contactTitle": "Program Director",
+      "registrationId": "DUNS 123456789",
+      "jurisdiction": "Colorado, US",
+      "website": "https://stateedu.org",
+      "industry": "Education",
+      "intendedUse": "Manage scholarship applications; verify student credentials"
     },
     {
       "id": "req-3",
@@ -512,7 +558,16 @@
       "name": "Metro Community College",
       "email": "registrar@metrocc.edu",
       "submittedAt": "2025-01-26T09:15:00Z",
-      "status": "pending"
+      "status": "pending",
+      "contactName": "Dr. Patricia Williams",
+      "contactTitle": "Registrar",
+      "contactPhone": "+1 (303) 555-7890",
+      "businessAddress": "1000 College Way, Denver, CO 80204",
+      "website": "https://metrocc.edu",
+      "industry": "Education",
+      "intendedUse": "Issue and verify academic credentials; partner with employers for job matching",
+      "accreditation": "Higher Learning Commission (HLC)",
+      "credentialTypes": "Transcripts, diplomas, certificates, digital badges"
     }
   ]
 }

@@ -1,0 +1,46 @@
+---
+# Trust Registry - trusted credential issuers for the marketplace.
+# Used for validation, display, and issuer resolution.
+#
+# Each registry entry represents an organization that can issue credentials.
+# The marketplace may validate that presented credentials come from registered issuers.
+
+registries:
+  # Education institutions (transcripts, diplomas, student cards)
+  - id: urn:uuid:123e4567-e89b-12d3-a456-426614174002
+    name: University of Colorado
+    type: EducationInstitution
+    did: did:web:universityofcolorado.edu
+    credentialTypes:
+      - CollegeTranscript
+      - StudentCard
+      - Diploma
+    logo: https://api.dicebear.com/7.x/identicon/png?seed=UoC&size=80
+    website: https://www.colorado.edu
+
+  - id: urn:uuid:123e4567-e89b-12d3-a456-426614174003
+    name: North Carolina High School
+    type: EducationInstitution
+    did: did:web:nchighschool.edu
+    credentialTypes:
+      - HighSchoolTranscript
+    logo: https://api.dicebear.com/7.x/identicon/png?seed=NCHighSchool&size=80
+    website: https://nchighschool.example.edu
+
+  # Employers (employment credentials, references)
+  - id: urn:uuid:123e4567-e89b-12d3-a456-426614174010
+    name: Metro General Hospital
+    type: Employer
+    did: did:web:metrogeneral.org
+    credentialTypes:
+      - EmploymentCredential
+      - ProfessionalReference
+    logo: https://api.dicebear.com/7.x/identicon/png?seed=MetroGeneral&size=96
+
+  - id: urn:uuid:123e4567-e89b-12d3-a456-426614174005
+    name: Pizza Utopia Inc.
+    type: Employer
+    did: did:web:pizzautopia.com
+    credentialTypes:
+      - EmploymentCredential
+    logo: https://api.dicebear.com/7.x/identicon/png?seed=PizzaUtopia&size=96

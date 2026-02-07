@@ -43,30 +43,45 @@
           </div>
         </div>
 
-        <div v-if="applicants.length === 0" class="empty-state">
-          <i class="pi pi-users"></i>
-          <p>No applicants yet.</p>
-        </div>
+        <StatusMessage v-if="applicants.length === 0" type="empty" message="No applicants yet." icon="pi-users" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import StatusMessage from '@/components/StatusMessage.vue';
 import { useDemoStore } from '@/store/demoStore';
+import { useEmployerJobStore } from '@/store/employerJobStore';
 import { useApplicantStore } from '@/store/applicantStore';
 
 const route = useRoute();
 const demoStore = useDemoStore();
+const employerJobStore = useEmployerJobStore();
 const applicantStore = useApplicantStore();
 
 const jobId = route.params.jobId as string;
+const fetchedJob = ref<{ id: string; title: string } | null>(null);
 
 const job = computed(() => {
+  const apiJob = employerJobStore.getJobById(jobId) ?? fetchedJob.value;
+  if (apiJob) return { id: apiJob.id, name: apiJob.title };
   return demoStore.allJobs.find((j) => j.id === jobId);
 });
+
+watch(
+  () => route.params.jobId,
+  async (param) => {
+    const id = Array.isArray(param) ? param[0] : param;
+    if (!id) return;
+    if (employerJobStore.getJobById(id) || demoStore.allJobs.find((j) => j.id === id)) return;
+    const j = await employerJobStore.getOrFetchJob(id);
+    fetchedJob.value = j ? { id: j.id, title: j.title } : null;
+  },
+  { immediate: true }
+);
 
 const applicants = computed(() => {
   return applicantStore.getApplicantsForJob(jobId);
@@ -196,19 +211,6 @@ function formatDate(iso: string) {
   &.reject {
     background: $marketplace-danger;
     color: white;
-  }
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 3rem;
-  color: $marketplace-text-muted;
-
-  i {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
   }
 }
 </style>

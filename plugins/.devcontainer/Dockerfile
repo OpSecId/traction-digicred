@@ -16,6 +16,7 @@ RUN curl -sSL https://install.python-poetry.org | python3 - \
 
 COPY pyproject.toml poetry.lock ./
 COPY /traction_innkeeper ./traction_innkeeper
+COPY /traction_marketplace ./traction_marketplace
 RUN poetry config virtualenvs.create false \
     && poetry install --no-root --all-extras \
     && rm -rf /root/.cache/pypoetry

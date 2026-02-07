@@ -1,5 +1,13 @@
 # Apply Utopia Configuration Guide
 
+## Config Directory
+
+| File | Purpose |
+|------|---------|
+| `config/demo.yaml` | Demo personas, jobs, tenant requests, admin/employer logins |
+| `config/trust-registry.yaml` | Trust registries (education institutions, employers) |
+| `config/credential-analysis.yaml` | Default credential analysis workflow (credential types, extraction, matching). Admin can override via Admin UI. |
+
 ## Configuration File
 
 The application uses a `config.json` file located at `frontend/public/config.json` for runtime configuration.
@@ -133,6 +141,20 @@ The service worker provides:
 - Hard refresh (Ctrl+Shift+R / Cmd+Shift+R)
 - Clear service worker cache
 - Rebuild application
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `PORT` | Backend server port (default: 5174) |
+| `DATABASE_TYPE` | Database type: `postgres` or `sqlite` (default: sqlite) |
+| `DATABASE_URL` | PostgreSQL connection URL (required when DATABASE_TYPE=postgres) |
+| `DATABASE_PATH` | SQLite database file path (default: ./data/marketplace.db) |
+| `CORS_ORIGIN` | Comma-separated allowed origins (empty = allow all, dev only) |
+| `MARKETPLACE_ADMIN_URI` | Marketplace Admin (ACA-Py) base URL, e.g. `http://localhost:8031` |
+| `MARKETPLACE_ADMIN_API_KEY` | API key for Marketplace Admin API authentication |
+| `MARKETPLACE_TENANCY_URI` | Marketplace Tenancy (ACA-Py multitenant) base URL, e.g. `http://localhost:8032`. Used for marketplace plugin (create invitation, analyze transcript). |
+| `MARKETPLACE_TENANCY_API_KEY` | API key for Marketplace Tenancy API authentication |
 
 ## Security Notes
 

@@ -23,6 +23,7 @@ endpoint:
 plugin:
   - aries_cloudagent.messaging.jsonld
   - traction_plugins.traction_innkeeper.v1_0
+  - traction_plugins.traction_marketplace.v1_0
   - basicmessage_storage.v1_0
   - connection_update.v1_0
   - multitenant_provider.v1_0
@@ -44,6 +45,9 @@ plugin-config-value:
   - traction_innkeeper.innkeeper_wallet.print_key=true
   - traction_innkeeper.innkeeper_wallet.print_token=true
   - traction_innkeeper.reservation.expiry_minutes=2880
+  - traction_marketplace.content_url=https://marketplace.example.com/embed/channel
+  - traction_marketplace.label=Apply Utopia
+  - traction_marketplace.goal=Browse jobs and opportunities from Apply Utopia
   - basicmessage_storage.wallet_enabled=true
 
 # invite: true

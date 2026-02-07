@@ -1,20 +1,33 @@
 <template>
   <div class="employer-jobs-page">
-    <router-link to="/employer" class="back-link">
+    <router-link to="/tenant" class="back-link">
       <i class="pi pi-arrow-left"></i>
       Back
     </router-link>
 
     <div v-if="!employerStore.isEmployer" class="no-employer">
-      <p>Please select an employer from the Employer Hub first.</p>
-      <router-link to="/employer" class="action-btn">Go to Employer Hub</router-link>
+      <p>Please select an employer from the Marketplace Tenants Hub first.</p>
+      <router-link to="/tenant" class="action-btn primary">Go to Marketplace Tenants Hub</router-link>
     </div>
 
     <div v-else>
-      <h1>My Job Postings</h1>
-      <p class="employer-name">{{ currentEmployer?.name }}</p>
+      <div class="page-header">
+        <div>
+          <h1>My Job Postings</h1>
+          <p class="employer-name">{{ currentEmployer?.name }}</p>
+        </div>
+        <router-link to="/tenant/jobs/create" class="create-btn">
+          <i class="pi pi-plus"></i>
+          Create job
+        </router-link>
+      </div>
 
-      <div class="job-list">
+      <div v-if="loading" class="loading-state">
+        <i class="pi pi-spin pi-spinner"></i>
+        Loading...
+      </div>
+
+      <div v-else class="job-list">
         <div
           v-for="job in jobs"
           :key="job.id"
@@ -22,8 +35,8 @@
           @click="goToJob(job.id)"
         >
           <div class="job-item-content">
-            <h3>{{ job.name }}</h3>
-            <p>{{ job.description }}</p>
+            <h3>{{ jobTitle(job) }}</h3>
+            <p>{{ jobDescription(job) }}</p>
             <div class="job-item-footer">
               <router-link
                 :to="{ name: 'JobApplicants', params: { jobId: job.id } }"
@@ -38,36 +51,79 @@
           </div>
         </div>
 
-        <div v-if="jobs.length === 0" class="empty-state">
-          <i class="pi pi-inbox"></i>
-          <p>No job postings yet.</p>
-        </div>
+        <StatusMessage v-if="jobs.length === 0" type="empty" message="No job postings yet." />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import StatusMessage from '@/components/StatusMessage.vue';
 import { useDemoStore } from '@/store/demoStore';
 import { useEmployerStore } from '@/store/employerStore';
 import { useApplicantStore } from '@/store/applicantStore';
+import { listJobPostings, type JobPosting } from '@/api/employerJobs';
+import { useEmployerJobStore } from '@/store/employerJobStore';
 
 const router = useRouter();
 const demoStore = useDemoStore();
 const employerStore = useEmployerStore();
 const applicantStore = useApplicantStore();
+const employerJobStore = useEmployerJobStore();
+
+const apiJobs = ref<JobPosting[]>([]);
+const loading = ref(false);
 
 const currentEmployer = computed(() => {
   if (!employerStore.currentEmployerId) return null;
   return demoStore.getEmployerById(employerStore.currentEmployerId);
 });
 
-const jobs = computed(() => {
+const demoJobs = computed(() => {
   if (!employerStore.currentEmployerId) return [];
   return demoStore.getJobsByEmployer(employerStore.currentEmployerId);
 });
+
+// Merge API jobs (created by employer) with demo jobs (from config). API jobs first.
+const jobs = computed(() => {
+  const api = apiJobs.value.map((j) => ({ ...j, _source: 'api' as const }));
+  const demo = demoJobs.value.map((j) => ({ ...j, _source: 'demo' as const }));
+  return [...api, ...demo];
+});
+
+function jobTitle(job: { title?: string; name?: string }) {
+  return job.title ?? job.name ?? 'Untitled';
+}
+
+function jobDescription(job: { description?: string }) {
+  return job.description ?? '';
+}
+
+async function loadApiJobs() {
+  if (!employerStore.currentEmployerId) return;
+  loading.value = true;
+  try {
+    const list = await listJobPostings(employerStore.currentEmployerId);
+    apiJobs.value = list;
+    employerJobStore.setJobs(list);
+  } catch {
+    apiJobs.value = [];
+    employerJobStore.setJobs([]);
+  } finally {
+    loading.value = false;
+  }
+}
+
+watch(
+  () => employerStore.currentEmployerId,
+  (id) => {
+    if (id) loadApiJobs();
+    else apiJobs.value = [];
+  },
+  { immediate: true }
+);
 
 function applicantCount(jobId: string) {
   return applicantStore.getApplicantsForJob(jobId).length;
@@ -80,40 +136,41 @@ function goToJob(jobId: string) {
 
 <style scoped lang="scss">
 @use '@/assets/variables.scss' as *;
+@use '@/assets/employer-common.scss';
 
 .employer-jobs-page {
   padding: 16px;
   padding-bottom: 24px;
 }
 
-.back-link {
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.create-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: $marketplace-accent-alt;
-  font-weight: 500;
-  margin-bottom: 20px;
-  text-decoration: none;
-}
-
-.no-employer {
-  text-align: center;
-  padding: 2rem;
-
-  p {
-    margin-bottom: 16px;
-    color: $marketplace-text-muted;
-  }
-}
-
-.action-btn {
-  display: inline-block;
-  padding: 12px 24px;
+  padding: 10px 18px;
   background: $marketplace-primary;
   color: $marketplace-text-on-primary;
   border-radius: 10px;
   font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  color: $marketplace-text-muted;
 }
 
 h1 {
@@ -173,19 +230,6 @@ h1 {
     i {
       color: $marketplace-text-muted;
     }
-  }
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 3rem;
-  color: $marketplace-text-muted;
-
-  i {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
   }
 }
 </style>

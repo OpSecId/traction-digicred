@@ -1,20 +1,30 @@
 <template>
   <div class="marketplace-app" :class="{ 'has-floating-bar': showFloatingBar }">
     <header class="marketplace-header">
-      <div class="marketplace-header-title">
-        <img
-          src="/img/digicred/logo-marketplace.svg"
-          alt="Apply Utopia"
-          class="header-logo"
-        />
+      <div class="marketplace-header-inner">
+        <div class="marketplace-header-title">
+          <router-link to="/" class="header-logo-link">
+            <img
+              :src="headerLogoUrl"
+              alt="Apply Utopia"
+              class="header-logo"
+            />
+          </router-link>
+        </div>
+        <div class="header-actions">
+          <router-link to="/tenant" class="header-sign-in">
+            <i class="pi pi-user"></i>
+            <span>Sign in</span>
+          </router-link>
+          <button
+            class="burger-btn"
+            aria-label="Open menu"
+            @click="menuOpen = !menuOpen"
+          >
+            <i class="pi pi-bars"></i>
+          </button>
+        </div>
       </div>
-      <button
-        class="burger-btn"
-        aria-label="Open menu"
-        @click="menuOpen = !menuOpen"
-      >
-        <i class="pi pi-bars"></i>
-      </button>
     </header>
 
     <div
@@ -78,31 +88,39 @@
     </div>
 
     <main class="marketplace-content">
-      <router-view v-slot="{ Component }">
-        <Suspense>
-          <component :is="Component" />
-          <template #fallback>
-            <div class="loading-placeholder">
-              <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-              <p>Loading...</p>
-            </div>
-          </template>
-        </Suspense>
-      </router-view>
+      <div class="marketplace-content-inner">
+        <router-view v-slot="{ Component }">
+          <Suspense>
+            <component :is="Component" />
+            <template #fallback>
+              <div class="loading-placeholder">
+                <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+                <p>Loading...</p>
+              </div>
+            </template>
+          </Suspense>
+        </router-view>
+      </div>
     </main>
+
+    <AppFooter v-if="showFooter" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import AppFooter from './AppFooter.vue';
+import { getAppIconUrl } from '@/services/configService';
+
+const headerLogoUrl = getAppIconUrl();
 
 const route = useRoute();
 const router = useRouter();
 const menuOpen = ref(false);
 
 const leftTabs = [
-  { path: '/', label: 'Jobs', icon: 'pi-briefcase', type: 'jobs' },
+  { path: '/channel', label: 'Jobs', icon: 'pi-briefcase', type: 'jobs' },
   { path: '/scholarships', label: 'Scholarships', icon: 'pi-gift', type: 'scholarships' },
 ];
 const rightTabs = [
@@ -112,13 +130,18 @@ const rightTabs = [
 
 const showFloatingBar = computed(() => {
   const p = route.path;
-  return p === '/' || p === '/scholarships' || p === '/services' || p === '/education';
+  return p === '/channel' || p === '/scholarships' || p === '/services' || p === '/education';
+});
+
+const showFooter = computed(() => {
+  const p = route.path;
+  return !(p === '/channel' || p.startsWith('/scholarships') || p.startsWith('/services') || p.startsWith('/education') || p.startsWith('/job/'));
 });
 
 const currentMarketplaceType = computed(() => {
   const type = route.meta.marketplaceType as string | undefined;
   if (type) return type;
-  if (route.path === '/') return 'jobs';
+  if (route.path === '/channel') return 'jobs';
   if (route.path.startsWith('/scholarships')) return 'scholarships';
   if (route.path.startsWith('/services')) return 'services';
   if (route.path.startsWith('/education')) return 'education';
@@ -141,14 +164,15 @@ function onSearchInput(e: Event) {
 }
 
 const navItems = [
-  { path: '/', label: 'Channel', icon: 'pi-compass', nav: 'discover' },
-  { path: '/employer', label: 'Employer', icon: 'pi-briefcase', nav: 'employer' },
+  { path: '/channel', label: 'Channel', icon: 'pi-compass', nav: 'channel' },
+  { path: '/tenant', label: 'Marketplace', icon: 'pi-briefcase', nav: 'tenant' },
   { path: '/admin', label: 'Admin', icon: 'pi-cog', nav: 'admin' },
 ];
 
 function isActive(nav: string) {
-  if (nav === 'discover') return route.path === '/' || route.path.startsWith('/scholarships') || route.path.startsWith('/services') || route.path.startsWith('/education') || route.path.startsWith('/job/');
-  if (nav === 'employer') return route.path.startsWith('/employer');
+  if (nav === 'landing') return route.path === '/';
+  if (nav === 'channel') return route.path === '/channel' || route.path.startsWith('/scholarships') || route.path.startsWith('/services') || route.path.startsWith('/education') || route.path.startsWith('/job/');
+  if (nav === 'tenant') return route.path.startsWith('/tenant');
   if (nav === 'admin') return route.path.startsWith('/admin');
   return false;
 }
@@ -156,6 +180,44 @@ function isActive(nav: string) {
 
 <style scoped lang="scss">
 @use '@/assets/variables.scss' as *;
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-sign-in {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: $marketplace-text-on-primary;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  transition: background 0.2s, border-color 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+
+  @media (max-width: 360px) {
+    padding: 8px 10px;
+
+    span {
+      display: none; /* Icon only on very small screens */
+    }
+  }
+}
+
+.header-logo-link {
+  display: flex;
+  align-items: center;
+}
 
 .header-logo {
   height: 32px;
@@ -261,6 +323,17 @@ function isActive(nav: string) {
   align-items: center;
   justify-content: center;
   gap: 12px;
+
+  @media (min-width: $breakpoint-desktop) {
+    position: relative;
+    bottom: auto;
+    padding: 16px 24px;
+    padding-bottom: 16px;
+    margin: 0 auto;
+    max-width: $content-max-width;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
 }
 
 .floating-bar-tabs {

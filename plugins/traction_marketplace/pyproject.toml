@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "traction-marketplace"
+version = "0.1.0"
+description = "ACA-Py plugin for DigiCred Marketplace: OOB invitations, transcript analysis, action menu"
+authors = ["DigiCred"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [{include = "traction_marketplace"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+acapy-agent = { version = "1.2.4" }
+typing-extensions = "4.12.2"
+aiosqlite = "^0.20.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.11.4"
+pytest = "^8.3.5"
+pytest-asyncio = "^0.26.0"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[build-system]
+requires = ["setuptools", "poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,6 +1,6 @@
 @use 'variables.scss' as *;
 
-// Mobile-first PWA layout - Uber Eats style
+// Mobile-first PWA layout - responsive for mobile and desktop
 .marketplace-app {
   display: flex;
   flex-direction: column;
@@ -8,6 +8,10 @@
   max-height: 100dvh;
   background-color: $marketplace-bg;
   padding-bottom: env(safe-area-inset-bottom, 0);
+
+  @media (min-width: $breakpoint-desktop) {
+    max-height: none;
+  }
 }
 
 .marketplace-content {
@@ -16,10 +20,31 @@
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  @media (min-width: $breakpoint-desktop) {
+    align-items: center;
+  }
+}
+
+.marketplace-content-inner {
+  width: 100%;
+  flex: 1;
+
+  @media (min-width: $breakpoint-desktop) {
+    max-width: $content-max-width;
+    margin: 0 auto;
+  }
 }
 
 .marketplace-app.has-floating-bar .marketplace-content {
   padding-bottom: 100px; /* Space for floating bar */
+
+  @media (min-width: $breakpoint-desktop) {
+    padding-bottom: 24px;
+  }
 }
 
 // Header
@@ -35,6 +60,19 @@
   align-items: center;
   justify-content: space-between;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  @media (min-width: $breakpoint-desktop) {
+    padding: 12px 24px;
+  }
+}
+
+.marketplace-header-inner {
+  width: 100%;
+  max-width: $content-max-width;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .marketplace-header-title {
@@ -49,9 +87,5 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
   margin-bottom: 12px;
-  transition: transform 0.2s, box-shadow 0.2s;
-
-  &:active {
-    transform: scale(0.98);
-  }
+  transition: box-shadow 0.2s;
 }

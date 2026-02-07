@@ -1,10 +1,6 @@
 <template>
   <div class="job-view-page">
-    <div v-if="!job" class="loading-state">
-      <i class="pi pi-spin pi-spinner"></i>
-      <p>Loading...</p>
-    </div>
-
+    <StatusMessage v-if="!job" type="loading" message="Loading..." />
     <div v-else class="job-detail">
       <!-- Employer Profile Section -->
       <div class="employer-profile-card">
@@ -129,6 +125,8 @@ import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useDemoStore } from '@/store/demoStore';
 import { useApplicantStore } from '@/store/applicantStore';
+import { employerInitials, avatarStyle, employerHeaderStyle } from '@/utils/employerUtils';
+import StatusMessage from '@/components/StatusMessage.vue';
 import type { JobWithEmployer } from '@/types/demo';
 
 const route = useRoute();
@@ -142,33 +140,6 @@ const job = computed<JobWithEmployer | undefined>(() => {
 });
 
 const showApplyModal = ref(false);
-
-function employerInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-}
-
-const AVATAR_COLORS = ['#003366', '#3c5973', '#6666cc', '#336C37', '#87623D', '#485773'];
-
-function avatarStyle(employerName: string): { backgroundColor: string } {
-  const hash = employerName.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  return { backgroundColor: AVATAR_COLORS[hash % AVATAR_COLORS.length] };
-}
-
-function employerHeaderStyle(job: JobWithEmployer) {
-  if (job.employerImage) {
-    return {
-      backgroundImage: `url(${job.employerImage})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    };
-  }
-  return avatarStyle(job.employerName);
-}
 
 function submitApplication() {
   if (!job.value) return;
@@ -185,14 +156,6 @@ function submitApplication() {
 .job-view-page {
   padding: 0;
   padding-bottom: 24px;
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 3rem;
-  color: $marketplace-text-muted;
 }
 
 .job-detail {

@@ -6,6 +6,8 @@ interface AppConfig {
     domain: string;
     themeColor: string;
     backgroundColor: string;
+    /** Icon URL for favicon, header logo. From VITE_ICON_URL or config.json */
+    iconUrl?: string;
   };
   api: {
     baseUrl: string;
@@ -28,8 +30,15 @@ export async function loadConfig(): Promise<AppConfig> {
     if (!response.ok) {
       throw new Error('Failed to load config');
     }
-    config = await response.json();
-    return config!;
+    const loaded = (await response.json()) as AppConfig;
+    config = {
+      ...loaded,
+      app: {
+        ...loaded.app,
+        iconUrl: loaded.app?.iconUrl ?? import.meta.env.VITE_ICON_URL ?? undefined,
+      },
+    };
+    return config;
   } catch (error) {
     console.error('Error loading config:', error);
     // Return default config
@@ -41,6 +50,7 @@ export async function loadConfig(): Promise<AppConfig> {
         domain: window.location.origin,
         themeColor: '#003366',
         backgroundColor: '#F5F5F5',
+        iconUrl: import.meta.env.VITE_ICON_URL ?? undefined,
       },
       api: {
         baseUrl: '/api',
@@ -64,4 +74,8 @@ export function getApiBaseUrl(): string {
 
 export function getAppDomain(): string {
   return config?.app.domain || window.location.origin;
+}
+
+export function getAppIconUrl(): string {
+  return config?.app?.iconUrl ?? '/img/digicred/logo-marketplace.svg';
 }

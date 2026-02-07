@@ -13,6 +13,7 @@ acapy-agent = { version = "1.2.4" }
 python-dateutil = "^2.9.0"
 typing-extensions = "4.12.2"
 traction-innkeeper = {path = "./traction_innkeeper", develop = true}
+traction-marketplace = {path = "./traction_marketplace", develop = true}
 
 aries-askar = { version = "~0.4.3" }
 anoncreds= { version = "0.2.0" }

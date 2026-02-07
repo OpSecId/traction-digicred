@@ -8,6 +8,10 @@ frontend/dev-dist/
 # Generated (from config/demo.yaml)
 frontend/public/demo.json
 
+# SQLite database (when using DATABASE_TYPE=sqlite)
+data/
+*.db
+
 # Environment and local config (never commit secrets)
 .env
 .env.local

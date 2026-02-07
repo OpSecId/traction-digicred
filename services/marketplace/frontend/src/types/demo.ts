@@ -22,15 +22,37 @@ export interface EmployerPersona {
   jobPostings: JobPosting[];
 }
 
-export type TenantType = 'Employer' | 'Scholarship Admin' | 'Education Institution';
+export type TenantType = 'Employer' | 'Scholarship Admin' | 'Education Institution' | 'Government Service';
 
 export interface TenantRequest {
   id: string;
+  referenceId?: string;
   tenantType: TenantType;
   name: string;
   email: string;
   submittedAt: string;
   status: 'pending' | 'approved' | 'rejected';
+  // KYC: contact person
+  contactName?: string;
+  contactTitle?: string;
+  contactPhone?: string;
+  // KYC: organization
+  registrationId?: string;
+  jurisdiction?: string;
+  businessAddress?: string;
+  website?: string;
+  industry?: string;
+  // KYC: intended use
+  intendedUse?: string;
+  // Employer-specific
+  hiringVolume?: string;
+  primaryIndustries?: string;
+  // Scholarship Admin-specific
+  fundingSource?: string;
+  eligibilityOverview?: string;
+  // Education Institution-specific
+  accreditation?: string;
+  credentialTypes?: string;
 }
 
 export interface DemoConfig {

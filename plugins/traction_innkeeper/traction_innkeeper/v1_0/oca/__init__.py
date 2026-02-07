@@ -1,7 +1,5 @@
 import logging
 
-from acapy_agent.admin.base_server import BaseAdminServer
-from acapy_agent.admin.server import AdminServer
 from acapy_agent.config.injection_context import InjectionContext
 from acapy_agent.core.event_bus import EventBus, Event
 from acapy_agent.core.plugin_registry import PluginRegistry
@@ -41,23 +39,16 @@ async def on_startup(profile: Profile, event: Event):
 
     OCA_PATH = "/oca"
 
-    srv: AdminServer = profile.context.inject(BaseAdminServer)
-
-    # see if any other base wallet routes were added...
+    # Register /oca as a base wallet route (accessible with API key in multitenant mode)
     base_wallet_routes = profile.context.settings.get("multitenant.base_wallet_routes")
-    LOGGER.info(f"base_wallet_routes = {base_wallet_routes}")
     if base_wallet_routes is None:
         base_wallet_routes = []
+    elif isinstance(base_wallet_routes, str):
+        base_wallet_routes = [base_wallet_routes]
     if OCA_PATH not in base_wallet_routes:
         base_wallet_routes.append(OCA_PATH)
-    # now add set the "configuration"
     profile.context.settings.set_value(
         "multitenant.base_wallet_routes", base_wallet_routes
     )
-    # and we need to tell the server to load the additional routes
-    # first call to this property "builds" the underlying property...
-    srv.additional_routes_pattern
-    # our pattern should be known to the server now...
-    # second call to the property should return all the patterns it will use
-    LOGGER.info(f"srv.additional_routes_pattern = {srv.additional_routes_pattern}")
+    LOGGER.info(f"base_wallet_routes = {base_wallet_routes}")
     LOGGER.info("< on_startup")

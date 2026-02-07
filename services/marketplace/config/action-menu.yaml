@@ -1,0 +1,17 @@
+title: Load jobs
+description: Discover jobs that match your skills
+items:
+  - title: Load jobs
+    description: Discover jobs that match your skills
+  - title: Load scholarships
+    description: Browse scholarships and funding opportunities
+  - title: Load certifications
+    description: Browse certifications and credentials
+  - title: Share transcript
+    description: Share your transcript credential for job matching
+presentationRequestCredentialTypes:
+  - CollegeTranscript
+  - HighSchoolTranscript
+  - Diploma
+  - StudentCard
+  - EmploymentCredential

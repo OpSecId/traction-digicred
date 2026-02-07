@@ -1,6 +1,6 @@
 <template>
   <div class="channel-layout">
-    <!-- Minimal header: logo + search -->
+    <!-- Minimal header: logo + search + category icons -->
     <header class="channel-header">
       <router-link to="/channel" class="channel-logo-link">
         <img :src="headerLogoUrl" alt="" class="channel-logo" />
@@ -15,6 +15,18 @@
           class="channel-search-input"
           @input="onSearchInput"
         />
+      </div>
+      <div v-if="!isJobDetail" class="channel-categories">
+        <router-link
+          v-for="item in bottomTabs"
+          :key="item.path"
+          :to="item.path"
+          class="category-chip"
+          :class="{ active: isTabActive(item) }"
+        >
+          <i :class="['pi', item.icon, 'category-icon']"></i>
+          <span class="category-label">{{ item.label }}</span>
+        </router-link>
       </div>
     </header>
 
@@ -152,6 +164,42 @@ function isTabActive(item: { path: string }) {
 
   i {
     color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+  }
+}
+
+.channel-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 4px;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.35);
+    color: white;
+  }
+
+  &.active {
+    background: white;
+    color: $marketplace-primary;
+  }
+
+  .category-icon {
     font-size: 1rem;
   }
 }

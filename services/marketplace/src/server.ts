@@ -584,7 +584,7 @@ app.get('/api/oob/active', async (req, res) => {
     const invitationUrl = `didcomm://link?oob=${encodeURIComponent(oobB64)}`;
     const base = getInvitationBaseUrl(req);
     const id = (doc as { id?: string }).id;
-    const qrUrl = id ? `${base}/oob/${id}` : `${base}/connect?oob=${encodeURIComponent(oobB64)}`;
+    const qrUrl = id ? `${base}/connect?_oobid=${encodeURIComponent(id)}` : `${base}/connect?oob=${encodeURIComponent(oobB64)}`;
     res.json({ invitation_url: invitationUrl, qr_url: qrUrl });
   } catch (err) {
     console.error('OOB active error:', err);

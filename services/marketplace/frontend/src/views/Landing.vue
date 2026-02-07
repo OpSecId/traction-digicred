@@ -17,42 +17,6 @@
               Check on my reservation
             </router-link>
           </div>
-          <div v-if="activeInvitation.invitation_url || activeInvitation.qr_url" class="join-channel-card">
-            <div class="join-channel-qr-wrap">
-              <QrcodeVue
-                v-if="activeInvitation.qr_url"
-                :value="activeInvitation.qr_url"
-                :size="80"
-                level="H"
-                render-as="svg"
-                foreground="#003366"
-                background="#ffffff"
-                :margin="1"
-                :gradient="true"
-                gradient-type="linear"
-                gradient-start-color="#003366"
-                gradient-end-color="#3c5973"
-                class="join-channel-qr"
-              />
-              <div class="join-channel-qr-badge">
-                <img :src="appIconUrl" alt="" class="join-channel-qr-icon" />
-              </div>
-            </div>
-            <div class="join-channel-content">
-              <p class="join-channel-desc">
-                Browse jobs, scholarships, and opportunities. Connect with employers using your verified credentials.
-              </p>
-              <a
-                v-if="activeInvitation.invitation_url"
-                :href="activeInvitation.invitation_url"
-                class="join-channel-link"
-                @click.prevent="onJoinChannelClick"
-              >
-                <i class="pi pi-compass"></i>
-                <span>Join channel</span>
-              </a>
-            </div>
-          </div>
         </div>
         <div class="hero-visual">
           <div class="visual-card visual-card-1">
@@ -97,6 +61,83 @@
             <p>Multi-tenant architecture. Secure, isolated, and ready to scale as you grow.</p>
           </article>
         </div>
+        <div
+          v-if="activeInvitation.invitation_url || activeInvitation.qr_url || pwaUrl"
+          class="join-channel-section"
+        >
+          <div class="join-channel-card">
+            <div class="join-channel-qr-wrap">
+              <QrcodeVue
+                v-if="qrValue"
+                :value="qrValue"
+                :size="120"
+                level="H"
+                render-as="svg"
+                foreground="#003366"
+                background="#ffffff"
+                :margin="0"
+                :gradient="true"
+                gradient-type="linear"
+                gradient-start-color="#003366"
+                gradient-end-color="#3c5973"
+                class="join-channel-qr"
+              />
+              <div class="join-channel-qr-badge">
+                <img :src="appIconUrl" alt="" class="join-channel-qr-icon" />
+              </div>
+            </div>
+            <div class="join-channel-content">
+              <div class="join-channel-toggle">
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  :class="{ active: qrMode === 'didcomm' }"
+                  :disabled="!activeInvitation.qr_url && !activeInvitation.invitation_url"
+                  @click="qrMode = 'didcomm'"
+                >
+                  DIDComm
+                </button>
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  :class="{ active: qrMode === 'pwa' }"
+                  @click="qrMode = 'pwa'"
+                >
+                  PWA
+                </button>
+              </div>
+              <p class="join-channel-desc">
+                <template v-if="qrMode === 'didcomm'">
+                  Browse jobs, scholarships, and opportunities. Connect with employers using your verified credentials.
+                </template>
+                <template v-else>
+                  Scan to open the app in your browser or add to your home screen.
+                </template>
+              </p>
+              <div class="join-channel-link-wrap">
+                <a
+                  v-if="qrMode === 'didcomm' && activeInvitation.invitation_url"
+                  :href="activeInvitation.invitation_url"
+                  class="join-channel-link"
+                  @click.prevent="onJoinChannelClick"
+                >
+                  <i class="pi pi-compass"></i>
+                  <span>Join channel</span>
+                </a>
+                <a
+                  v-else-if="qrMode === 'pwa' && pwaUrl"
+                  :href="pwaUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="join-channel-link"
+                >
+                  <i class="pi pi-external-link"></i>
+                  <span>Open app</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -118,11 +159,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import QrcodeVue from 'qrcode.vue';
 import { getActiveInvitation } from '@/api/oob';
-import { getAppIconUrl } from '@/services/configService';
+import { getAppIconUrl, getAppDomain } from '@/services/configService';
 import { isMobile } from '@/utils/isMobile';
 
 const toast = useToast();
@@ -131,6 +172,22 @@ const activeInvitation = ref<{ invitation_url: string | null; qr_url: string | n
   qr_url: null,
 });
 const appIconUrl = getAppIconUrl();
+const qrMode = ref<'didcomm' | 'pwa'>('didcomm');
+
+const pwaUrl = computed(() => {
+  try {
+    return getAppDomain().replace(/\/$/, '');
+  } catch {
+    return typeof window !== 'undefined' ? window.location.origin : '';
+  }
+});
+
+const qrValue = computed(() => {
+  if (qrMode.value === 'pwa') {
+    return pwaUrl.value;
+  }
+  return activeInvitation.value.qr_url ?? activeInvitation.value.invitation_url ?? '';
+});
 
 function onJoinChannelClick() {
   const url = activeInvitation.value.invitation_url;
@@ -146,11 +203,11 @@ function onJoinChannelClick() {
     window.location.href = url;
   } else {
     toast.add({
-      severity: 'secondary',
-      life: 5000,
-      summary: '',
-      detail: 'On desktop, scan the QR code with your DigiCred wallet to join.',
-      closable: false,
+      severity: 'info',
+      life: 8000,
+      summary: 'Scan QR code',
+      detail: 'On desktop, scan the QR code above with your DigiCred wallet to join.',
+      closable: true,
     });
   }
 }
@@ -300,22 +357,23 @@ onMounted(async () => {
   }
 }
 
-/* Join channel card — compact, stylish horizontal */
+/* Join channel section — below Why join? */
+.join-channel-section {
+  margin-top: 2.5rem;
+  display: flex;
+  justify-content: center;
+}
+
 .join-channel-card {
-  margin-top: 1.75rem;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 18px;
   padding: 12px 22px;
-  min-width: 300px;
-  max-width: 400px;
+  width: 600px;
+  min-height: 160px;
+  height: 160px;
   background: $marketplace-bg-card;
-
-  @media (max-width: $breakpoint-desktop) {
-    margin-left: auto;
-    margin-right: auto;
-  }
   border-radius: 14px;
   box-shadow: 0 4px 24px rgba(0, 51, 102, 0.1), 0 1px 4px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 51, 102, 0.06);
@@ -336,10 +394,12 @@ onMounted(async () => {
 .join-channel-qr-wrap {
   position: relative;
   flex-shrink: 0;
+  width: 128px;
+  height: 128px;
 }
 
 .join-channel-qr {
-  padding: 8px;
+  padding: 4px;
   background: white;
   border-radius: 10px;
   box-shadow: 0 2px 12px rgba(0, 51, 102, 0.08);
@@ -384,6 +444,42 @@ onMounted(async () => {
   gap: 10px;
   min-width: 0;
   flex: 1;
+  min-height: 120px;
+}
+
+.join-channel-toggle {
+  display: flex;
+  gap: 2px;
+}
+
+.join-channel-toggle .toggle-btn {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border: 1px solid $marketplace-panel-border;
+  border-radius: 6px;
+  background: $marketplace-bg;
+  color: $marketplace-text-muted;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 51, 102, 0.06);
+    color: $marketplace-primary;
+    border-color: rgba(0, 51, 102, 0.3);
+  }
+
+  &.active {
+    background: $marketplace-primary;
+    color: white;
+    border-color: $marketplace-primary;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .join-channel-desc {
@@ -392,13 +488,20 @@ onMounted(async () => {
   line-height: 1.4;
   color: $marketplace-text-muted;
   text-align: left;
+  min-height: 2.8em;
+}
+
+.join-channel-link-wrap {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .join-channel-link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  align-self: flex-end;
   padding: 8px 16px;
   font-size: 0.875rem;
   font-weight: 600;

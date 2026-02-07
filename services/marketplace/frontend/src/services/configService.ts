@@ -72,8 +72,24 @@ export function getApiBaseUrl(): string {
   return config?.api.baseUrl || '/api';
 }
 
+/** Known placeholder domains – use window.location.origin instead when config has these */
+const PLACEHOLDER_DOMAINS = ['example.com', 'yourdomain.com'];
+
+function isPlaceholderDomain(domain: string): boolean {
+  try {
+    const host = new URL(domain).hostname.toLowerCase();
+    return PLACEHOLDER_DOMAINS.some((p) => host.endsWith(p));
+  } catch {
+    return false;
+  }
+}
+
 export function getAppDomain(): string {
-  return config?.app.domain || window.location.origin;
+  const configured = config?.app.domain;
+  if (!configured || isPlaceholderDomain(configured)) {
+    return typeof window !== 'undefined' ? window.location.origin : '';
+  }
+  return configured;
 }
 
 export function getAppIconUrl(): string {

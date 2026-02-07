@@ -5,7 +5,8 @@
     "description": "Discover jobs and manage your career with Apply Utopia",
     "domain": "https://marketplace.yourdomain.com",
     "themeColor": "#003366",
-    "backgroundColor": "#F5F5F5"
+    "backgroundColor": "#F5F5F5",
+    "iconUrl": "https://avatars.githubusercontent.com/u/115738872"
   },
   "api": {
     "baseUrl": "/api"

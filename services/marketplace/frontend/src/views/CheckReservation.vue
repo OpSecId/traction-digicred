@@ -1,5 +1,9 @@
 <template>
   <div class="check-reservation">
+    <button type="button" class="back-link" @click="goBack">
+      <i class="pi pi-arrow-left"></i>
+      Back
+    </button>
     <section class="check-section">
       <h1 class="page-title">Check on my reservation</h1>
       <p class="page-desc">Enter your reservation ID to view status and details.</p>
@@ -39,8 +43,19 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { getReservationById } from '@/api/reservations';
 import type { TenantRequest } from '@/types/demo';
+
+const router = useRouter();
+
+function goBack() {
+  if (window.history.length > 1) {
+    router.back();
+  } else {
+    router.push('/');
+  }
+}
 
 const reservationId = ref('');
 const reservation = ref<TenantRequest | null>(null);
@@ -91,6 +106,26 @@ async function handleLookup() {
   padding: 2rem 1rem;
   max-width: 520px;
   margin: 0 auto;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  margin-bottom: 12px;
+  border: none;
+  background: transparent;
+  color: $marketplace-text-muted;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: $marketplace-primary;
+  }
 }
 
 .check-section {

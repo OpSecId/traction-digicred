@@ -13,7 +13,14 @@
             <router-link to="/tenant/onboard" class="btn-primary">
               Request tenancy
             </router-link>
-            <router-link to="/channel" class="btn-secondary">
+            <a
+              v-if="didcommUrl"
+              :href="didcommUrl"
+              class="btn-secondary"
+            >
+              Join channel
+            </a>
+            <router-link v-else to="/channel" class="btn-secondary">
               Join channel
             </router-link>
             <router-link to="/reservation/check" class="btn-tertiary">
@@ -83,6 +90,20 @@
     </section>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { getActiveInvitationUrl } from '@/api/oob';
+
+const didcommUrl = ref<string | null>(null);
+
+onMounted(async () => {
+  const url = await getActiveInvitationUrl();
+  if (url) {
+    didcommUrl.value = url.replace(/^https:\/\//, 'didcomm://');
+  }
+});
+</script>
 
 <style scoped lang="scss">
 @use 'sass:color';

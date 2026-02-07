@@ -15,6 +15,7 @@ import {
   updateActionMenuConfig,
 } from './controllers/actionMenuController';
 import { buildMarketplaceProfileCredential } from './controllers/credentialIssuanceController';
+import { marketplaceBaseUrl } from './config';
 import { marketplaceIssuer } from './config';
 import { buildJobPostingCredential } from './controllers/jobPostingController';
 import { buildEmployerProfileCredential } from './controllers/employerProfileController';
@@ -27,6 +28,7 @@ import {
   employerProfileRepo,
   jobPostingRepo,
   credentialAnalysisConfigRepo,
+  invitationRepo,
 } from './repositories/mongo';
 
 const app = express();
@@ -482,16 +484,79 @@ app.post('/api/innkeeper/workflows', async (req, res) => {
   }
 });
 
-// Marketplace plugin: create OOB invitation (proxies to ACA-Py agent)
+// Marketplace plugin: create OOB invitation (proxies to ACA-Py agent, stores in MongoDB for short URL)
 app.post('/api/innkeeper/marketplace/invitation', async (req, res) => {
   try {
     const body = req.body as Record<string, unknown>;
     const result = await marketplaceController.createInvitation(body);
+    const fullUrl = result.invitation_url as string;
+    const oobMatch = /[?&]oob=([^&]+)/.exec(fullUrl);
+    const oobB64 = oobMatch ? oobMatch[1] : '';
+    if (oobB64) {
+      const oobId = result.oob_id as string | undefined;
+      const doc = await invitationRepo.insert({
+        oobB64,
+        oobId,
+        contentUrl: body.content_url as string | undefined,
+        invitation: result.invitation as Record<string, unknown>,
+      });
+      const id = (doc as { id?: string }).id ?? oobId;
+      result.invitation_url = `${marketplaceBaseUrl.replace(/\/$/, '')}/oob/${id}`;
+    }
     res.json(result);
   } catch (err) {
     console.error('Marketplace create invitation error:', err);
     const msg = err instanceof Error ? err.message : 'Failed to create invitation';
     res.status(500).json({ error: msg });
+  }
+});
+
+// OOB short URL redirect: /oob/:id -> /connect?_oobid={uuid}
+app.get('/oob/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await invitationRepo.getById(id);
+    if (!doc) {
+      res.status(404).json({ error: 'Invitation not found' });
+      return;
+    }
+    const connectUrl = `${marketplaceBaseUrl.replace(/\/$/, '')}/connect?_oobid=${encodeURIComponent(id)}`;
+    res.redirect(302, connectUrl);
+  } catch (err) {
+    console.error('OOB redirect error:', err);
+    res.status(500).json({ error: 'Failed to resolve invitation' });
+  }
+});
+
+// Get latest invitation URL (public, for Join channel button)
+app.get('/api/oob/active', async (_req, res) => {
+  try {
+    const doc = await invitationRepo.getLatest();
+    if (!doc?.oobB64) {
+      res.json({ invitation_url: null });
+      return;
+    }
+    const fullUrl = `${marketplaceBaseUrl.replace(/\/$/, '')}/connect?oob=${encodeURIComponent(String(doc.oobB64))}`;
+    res.json({ invitation_url: fullUrl });
+  } catch (err) {
+    console.error('OOB active error:', err);
+    res.json({ invitation_url: null });
+  }
+});
+
+// Resolve OOB by _oobid: returns full invitation for /connect page to use
+app.get('/api/oob/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await invitationRepo.getById(id);
+    if (!doc?.oobB64) {
+      res.status(404).json({ error: 'Invitation not found' });
+      return;
+    }
+    res.json({ oob: String(doc.oobB64), invitation: doc.invitation });
+  } catch (err) {
+    console.error('OOB resolve error:', err);
+    res.status(500).json({ error: 'Failed to resolve invitation' });
   }
 });
 

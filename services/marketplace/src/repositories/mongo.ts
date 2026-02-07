@@ -3,7 +3,7 @@
  * Replaces pluginDb for storage; plugin still used for tenant provisioning.
  */
 
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { buildReservationCredentialFromTenantRequest } from '../controllers/credentialIssuanceController';
 import { getMongoDb } from '../db/mongodb';
 
@@ -14,6 +14,7 @@ const COLL = {
   employer_profiles: 'employer_profiles',
   job_postings: 'job_postings',
   credential_analysis_config: 'credential_analysis_config',
+  invitations: 'invitations',
 } as const;
 
 function refId(): string {
@@ -419,6 +420,47 @@ export const jobPostingRepo = {
     };
     await col.insertOne(doc);
     return doc;
+  },
+};
+
+// OOB invitations (short URL storage; id is oob_id UUID)
+export const invitationRepo = {
+  async insert(data: {
+    oobB64: string;
+    oobId?: string;
+    contentUrl?: string;
+    invitation?: Record<string, unknown>;
+  }): Promise<Record<string, unknown>> {
+    const db = await getMongoDb();
+    const col = db.collection(COLL.invitations);
+    const id = data.oobId ?? randomBytes(6).toString('base64url');
+    const doc = {
+      id,
+      oobB64: data.oobB64,
+      oobId: data.oobId ?? null,
+      contentUrl: data.contentUrl ?? null,
+      invitation: data.invitation ?? null,
+      createdAt: now(),
+    };
+    await col.insertOne(doc);
+    return doc;
+  },
+
+  async getById(id: string): Promise<Record<string, unknown> | null> {
+    const db = await getMongoDb();
+    const col = db.collection(COLL.invitations);
+    const doc = await col.findOne({ id });
+    return doc as Record<string, unknown> | null;
+  },
+
+  async getLatest(): Promise<Record<string, unknown> | null> {
+    const db = await getMongoDb();
+    const col = db.collection(COLL.invitations);
+    const doc = await col.findOne(
+      {},
+      { sort: { createdAt: -1 } }
+    );
+    return doc as Record<string, unknown> | null;
   },
 };
 

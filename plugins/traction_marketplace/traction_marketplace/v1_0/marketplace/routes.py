@@ -5,6 +5,7 @@ import functools
 import json
 import logging
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 from aiohttp import web
 from aiohttp_apispec import docs, request_schema, response_schema
@@ -167,9 +168,15 @@ async def create_marketplace_invitation(request: web.BaseRequest):
         invitation["imageUrl"] = image_url
 
     # Re-encode invitation_url with augmented invitation
+    # Use content_url origin as base so the invitation links to the current app
     invitation_bytes = json.dumps(invitation, separators=(",", ":")).encode()
     invitation_b64 = base64.urlsafe_b64encode(invitation_bytes).rstrip(b"=").decode()
-    invitation_url = f"https://example.com/connect?oob={invitation_b64}"
+    try:
+        parsed = urlparse(content_url)
+        base_url = f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+    except Exception:
+        base_url = "https://example.com"
+    invitation_url = f"{base_url}/connect?oob={invitation_b64}"
 
     oob_id = getattr(invi_rec, "invi_msg_id", None) or getattr(invi_rec, "invitation_id", None) or getattr(invi_rec, "oob_id", None) or ""
 

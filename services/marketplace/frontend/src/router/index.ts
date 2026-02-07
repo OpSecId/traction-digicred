@@ -1,6 +1,7 @@
 import { createWebHistory, createRouter } from 'vue-router';
 import AppLayout from '@/components/AppLayout.vue';
 import { useAdminStore } from '@/store/adminStore';
+import { isMobile } from '@/utils/isMobile';
 
 const routes = [
   {
@@ -164,6 +165,10 @@ const router = createRouter({
 });
 
 router.beforeEach((to) => {
+  // Mobile users: redirect root to channel view
+  if (to.path === '/' && isMobile()) {
+    return { path: '/channel', replace: true };
+  }
   if (to.meta.requiresInnkeeper && to.path !== '/innkeeper/login') {
     const adminStore = useAdminStore();
     if (!adminStore.isAdmin) {

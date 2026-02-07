@@ -47,22 +47,23 @@
   }
 }
 
-// Header
+// Header — modern, clean
 .marketplace-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: $marketplace-primary;
+  background: linear-gradient(135deg, $marketplace-primary 0%, $marketplace-secondary 100%);
   color: $marketplace-text-on-primary;
   padding: 12px 16px;
   padding-top: calc(12px + env(safe-area-inset-top, 0));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 16px rgba(0, 51, 102, 0.2);
 
   @media (min-width: $breakpoint-desktop) {
-    padding: 12px 24px;
+    padding: 14px 24px;
+    box-shadow: 0 2px 20px rgba(0, 51, 102, 0.15);
   }
 }
 

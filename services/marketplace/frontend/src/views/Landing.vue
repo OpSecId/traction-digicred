@@ -13,19 +13,45 @@
             <router-link to="/tenant/onboard" class="btn-primary">
               Request tenancy
             </router-link>
-            <a
-              v-if="didcommUrl"
-              :href="didcommUrl"
-              class="btn-secondary"
-            >
-              Join channel
-            </a>
-            <router-link v-else to="/channel" class="btn-secondary">
-              Join channel
-            </router-link>
             <router-link to="/reservation/check" class="btn-tertiary">
               Check on my reservation
             </router-link>
+          </div>
+          <div v-if="activeInvitation.invitation_url || activeInvitation.qr_url" class="join-channel-card">
+            <div class="join-channel-qr-wrap">
+              <QrcodeVue
+                v-if="activeInvitation.qr_url"
+                :value="activeInvitation.qr_url"
+                :size="80"
+                level="H"
+                render-as="svg"
+                foreground="#003366"
+                background="#ffffff"
+                :margin="1"
+                :gradient="true"
+                gradient-type="linear"
+                gradient-start-color="#003366"
+                gradient-end-color="#3c5973"
+                class="join-channel-qr"
+              />
+              <div class="join-channel-qr-badge">
+                <img :src="appIconUrl" alt="" class="join-channel-qr-icon" />
+              </div>
+            </div>
+            <div class="join-channel-content">
+              <p class="join-channel-desc">
+                Browse jobs, scholarships, and opportunities. Connect with employers using your verified credentials.
+              </p>
+              <a
+                v-if="activeInvitation.invitation_url"
+                :href="activeInvitation.invitation_url"
+                class="join-channel-link"
+                @click.prevent="onJoinChannelClick"
+              >
+                <i class="pi pi-compass"></i>
+                <span>Join channel</span>
+              </a>
+            </div>
           </div>
         </div>
         <div class="hero-visual">
@@ -93,15 +119,44 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { getActiveInvitationUrl } from '@/api/oob';
+import { useToast } from 'primevue/usetoast';
+import QrcodeVue from 'qrcode.vue';
+import { getActiveInvitation } from '@/api/oob';
+import { getAppIconUrl } from '@/services/configService';
+import { isMobile } from '@/utils/isMobile';
 
-const didcommUrl = ref<string | null>(null);
+const toast = useToast();
+const activeInvitation = ref<{ invitation_url: string | null; qr_url: string | null }>({
+  invitation_url: null,
+  qr_url: null,
+});
+const appIconUrl = getAppIconUrl();
+
+function onJoinChannelClick() {
+  const url = activeInvitation.value.invitation_url;
+  if (!url) return;
+  if (isMobile()) {
+    toast.add({
+      severity: 'secondary',
+      life: 4500,
+      summary: '',
+      detail: 'Opens in DigiCred app.',
+      closable: false,
+    });
+    window.location.href = url;
+  } else {
+    toast.add({
+      severity: 'secondary',
+      life: 5000,
+      summary: '',
+      detail: 'On desktop, scan the QR code with your DigiCred wallet to join.',
+      closable: false,
+    });
+  }
+}
 
 onMounted(async () => {
-  const url = await getActiveInvitationUrl();
-  if (url) {
-    didcommUrl.value = url;
-  }
+  activeInvitation.value = await getActiveInvitation();
 });
 </script>
 
@@ -242,6 +297,125 @@ onMounted(async () => {
   &:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+/* Join channel card — compact, stylish horizontal */
+.join-channel-card {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 22px;
+  min-width: 300px;
+  max-width: 400px;
+  background: $marketplace-bg-card;
+
+  @media (max-width: $breakpoint-desktop) {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0, 51, 102, 0.1), 0 1px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 51, 102, 0.06);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, $marketplace-primary 0%, $marketplace-accent-alt 100%);
+  }
+}
+
+.join-channel-qr-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.join-channel-qr {
+  padding: 8px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 51, 102, 0.08);
+  border: 1px solid rgba(0, 51, 102, 0.08);
+  overflow: hidden;
+  display: block;
+
+  :deep(canvas),
+  :deep(svg) {
+    display: block;
+    border-radius: 6px;
+  }
+}
+
+.join-channel-qr-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 51, 102, 0.12);
+  border: 2px solid white;
+}
+
+.join-channel-qr-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.join-channel-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.join-channel-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: $marketplace-text-muted;
+  text-align: left;
+}
+
+.join-channel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-end;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  text-decoration: none;
+  background: linear-gradient(135deg, $marketplace-primary 0%, $marketplace-secondary 100%);
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 51, 102, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 51, 102, 0.35);
+  }
+
+  i {
+    font-size: 1rem;
   }
 }
 

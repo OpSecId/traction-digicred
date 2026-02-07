@@ -36,15 +36,13 @@
     </header>
     <main class="admin-content">
       <router-view v-slot="{ Component }">
-        <Suspense>
-          <component :is="Component" />
-          <template #fallback>
-            <div class="loading-state">
-              <i class="pi pi-spin pi-spinner"></i>
-              <p>Loading...</p>
-            </div>
-          </template>
-        </Suspense>
+        <template v-if="isPending">
+          <div class="loading-state">
+            <i class="pi pi-spin pi-spinner"></i>
+            <p>Loading...</p>
+          </div>
+        </template>
+        <component v-else-if="Component" :is="Component" />
       </router-view>
     </main>
   </div>
@@ -53,11 +51,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useRouteLoading } from '@/composables/useRouteLoading';
 import { useAdminStore } from '@/store/adminStore';
 import { useTenantRequestStore } from '@/store/tenantRequestStore';
 
 const route = useRoute();
 const router = useRouter();
+const { isPending } = useRouteLoading();
 const adminStore = useAdminStore();
 const tenantStore = useTenantRequestStore();
 

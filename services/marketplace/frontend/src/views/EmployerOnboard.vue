@@ -11,7 +11,8 @@
 
       <form class="onboard-form" @submit.prevent="submitOnboarding">
         <div class="form-box">
-          <h3 class="form-box-title">Organization type</h3>
+          <h3 class="form-box-title">Tenancy Type</h3>
+          <p class="form-box-desc">Choose how your organization will participate in the marketplace: employers publish jobs, scholarship admins manage programs, education institutions connect learners, or government services offer public programs.</p>
           <div class="form-block">
             <label class="block-label">Type <span class="req">*</span></label>
             <select v-model="form.tenancyType" required class="input">
@@ -25,7 +26,8 @@
         </div>
 
         <div class="form-box">
-          <h3 class="form-box-title">Contact</h3>
+          <h3 class="form-box-title">Contact Point</h3>
+          <p class="form-box-desc">The primary person marketplace admins will reach for approvals, questions, or credential updates. This contact information is included in your profile credential.</p>
           <div class="form-row-2">
             <div class="form-block">
               <label class="block-label">Name <span class="req">*</span></label>
@@ -50,6 +52,7 @@
 
         <div class="form-box">
           <h3 class="form-box-title">Organization</h3>
+          <p class="form-box-desc">Your organization's legal and business details. These are used to verify your identity and appear in your marketplace profile.</p>
           <div class="form-block">
             <label class="block-label">Organization name <span class="req">*</span></label>
             <input v-model="form.companyName" type="text" required placeholder="Acme Inc." class="input" />
@@ -82,6 +85,7 @@
 
         <div class="form-box">
           <h3 class="form-box-title">Intended use</h3>
+          <p class="form-box-desc">Briefly describe how you plan to use the marketplace. This helps admins review your request and tailor your onboarding.</p>
           <div class="form-block">
             <label class="block-label">Describe how you will use the marketplace</label>
             <textarea v-model="form.intendedUse" rows="2" placeholder="Briefly describe how you will use the marketplace" class="input input-textarea"></textarea>
@@ -244,6 +248,13 @@ async function submitOnboarding() {
   margin: 0;
   padding-bottom: 8px;
   border-bottom: 1px solid $marketplace-panel-border;
+}
+
+.form-box-desc {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: $marketplace-text-muted;
+  margin: -4px 0 0 0;
 }
 
 .form-block {

@@ -6,7 +6,7 @@ interface AppConfig {
     domain: string;
     themeColor: string;
     backgroundColor: string;
-    /** Icon URL for favicon, header logo. From VITE_ICON_URL or config.json */
+    /** Icon URL for favicon, header logo. From VITE_MARKETPLACE_ICON or config.json */
     iconUrl?: string;
   };
   api: {
@@ -35,7 +35,7 @@ export async function loadConfig(): Promise<AppConfig> {
       ...loaded,
       app: {
         ...loaded.app,
-        iconUrl: loaded.app?.iconUrl ?? import.meta.env.VITE_ICON_URL ?? undefined,
+        iconUrl: loaded.app?.iconUrl ?? import.meta.env.VITE_MARKETPLACE_ICON ?? undefined,
       },
     };
     return config;
@@ -50,7 +50,7 @@ export async function loadConfig(): Promise<AppConfig> {
         domain: window.location.origin,
         themeColor: '#003366',
         backgroundColor: '#F5F5F5',
-        iconUrl: import.meta.env.VITE_ICON_URL ?? undefined,
+        iconUrl: import.meta.env.VITE_MARKETPLACE_ICON ?? undefined,
       },
       api: {
         baseUrl: '/api',
@@ -77,5 +77,5 @@ export function getAppDomain(): string {
 }
 
 export function getAppIconUrl(): string {
-  return config?.app?.iconUrl ?? '/img/digicred/logo-marketplace.svg';
+  return config?.app?.iconUrl ?? import.meta.env.VITE_MARKETPLACE_ICON ?? '/img/digicred/logo-marketplace.svg';
 }

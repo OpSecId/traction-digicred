@@ -572,20 +572,23 @@ app.get('/connect', async (req, res, next) => {
   }
 });
 
-// Get latest invitation URL (public, for Join channel button) — didcomm://link?oob= format
+// Get latest invitation URL (public) — didcomm for click, qr_url (https) for QR
 app.get('/api/oob/active', async (req, res) => {
   try {
     const doc = await invitationRepo.getLatest();
     if (!doc?.oobB64) {
-      res.json({ invitation_url: null });
+      res.json({ invitation_url: null, qr_url: null });
       return;
     }
     const oobB64 = String(doc.oobB64);
     const invitationUrl = `didcomm://link?oob=${encodeURIComponent(oobB64)}`;
-    res.json({ invitation_url: invitationUrl });
+    const base = getInvitationBaseUrl(req);
+    const id = (doc as { id?: string }).id;
+    const qrUrl = id ? `${base}/oob/${id}` : `${base}/connect?oob=${encodeURIComponent(oobB64)}`;
+    res.json({ invitation_url: invitationUrl, qr_url: qrUrl });
   } catch (err) {
     console.error('OOB active error:', err);
-    res.json({ invitation_url: null });
+    res.json({ invitation_url: null, qr_url: null });
   }
 });
 

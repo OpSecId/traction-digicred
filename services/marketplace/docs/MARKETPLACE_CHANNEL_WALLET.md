@@ -65,7 +65,7 @@ The OOB message uses the standard RFC 0434 structure: `handshake_protocols` and 
   "services": ["<DID or inline service block>"],
   "attachments": [
     {
-      "id": "digicred-channel-metadata",
+      "id": "marketplace-channel-metadata",
       "media_type": "application/digicred-channel+json",
       "data": {
         "base64": "<base64-encoded channel metadata payload>"
@@ -79,7 +79,7 @@ The OOB message uses the standard RFC 0434 structure: `handshake_protocols` and 
 |--------------|---------|
 | `handshake_protocols` | Initiates the DID Exchange handshake (not an attachment) |
 | `services` | Endpoint(s) for the wallet to send the handshake response |
-| `attachments` (digicred-channel-metadata) | Channel type and content URL for marketplace channels |
+| `attachments` (marketplace-channel-metadata) | Channel type and content URL for marketplace channels |
 
 ### 2.3 Channel Metadata Attachment Payload
 

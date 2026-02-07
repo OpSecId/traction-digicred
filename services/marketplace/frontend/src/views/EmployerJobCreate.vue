@@ -121,7 +121,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDemoStore } from '@/store/demoStore';
 import { useEmployerStore } from '@/store/employerStore';
-import { createJobPosting, getEmployerProfile, profileSubjectFromCredential } from '@/api/employerJobs';
+import { createJobPosting, getEmployerProfile, profileSubjectFromCredential, emailFromSubject } from '@/api/employerJobs';
 
 const router = useRouter();
 const demoStore = useDemoStore();
@@ -168,7 +168,7 @@ async function submitJob() {
     await createJobPosting({
       employerId: employerStore.currentEmployerId,
       employerName: ((subject.name as string) || currentEmployer.value?.name) ?? 'Employer',
-      employerEmail: subject.email as string | undefined,
+      employerEmail: emailFromSubject(subject),
       employerIndustry: subject.industry as string | undefined,
       employerWebsite: (subject.url as string) || (subject.website as string) || undefined,
       title: form.value.title.trim(),

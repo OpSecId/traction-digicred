@@ -128,7 +128,7 @@ async def create_marketplace_invitation(request: web.BaseRequest):
     metadata_b64 = base64.b64encode(metadata_json.encode()).decode()
 
     attachment = {
-        "id": "digicred-channel-metadata",
+        "id": "marketplace-channel-metadata",
         "media_type": "application/marketplace-channel+json",
         "data": {"base64": metadata_b64},
     }

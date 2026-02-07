@@ -1,6 +1,68 @@
 @forward 'layout.scss';
 @forward 'variables.scss';
 @use 'variables.scss' as *;
+
+/* PrimeVue Toast — modern, opaque, styled */
+.p-toast.p-toast-bottom-center {
+  margin: 0 1rem 1.5rem;
+}
+
+.p-toast .p-toast-message {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 51, 102, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 51, 102, 0.12) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+
+  .p-toast-message-content {
+    background: transparent !important;
+    border: none !important;
+    padding: 16px 20px 16px 20px !important;
+  }
+
+  .p-toast-message-text .p-toast-detail,
+  .p-toast-detail {
+    color: $marketplace-text !important;
+    margin: 0 !important;
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .p-toast-summary {
+    display: none;
+  }
+
+  .p-toast-message-icon {
+    display: none;
+  }
+
+  /* Modern close button — circular, minimal */
+  .p-toast-icon-close {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+    min-width: 1.75rem !important;
+    min-height: 1.75rem !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: $marketplace-text-muted !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.2s, color 0.2s !important;
+
+    &:hover {
+      background: rgba(0, 51, 102, 0.08) !important;
+      color: $marketplace-text !important;
+    }
+
+    .p-icon,
+    svg {
+      width: 0.875rem !important;
+      height: 0.875rem !important;
+    }
+  }
+}
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap');
 
 html,

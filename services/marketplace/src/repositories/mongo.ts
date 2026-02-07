@@ -275,9 +275,13 @@ export const tenantRepo = {
     const db = await getMongoDb();
     const col = db.collection(COLL.tenants);
     const normalized = String(email).toLowerCase().trim();
+    const emailRegex = new RegExp(`^${normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
     const docs = await col
       .find({
-        'credential.credentialSubject.email': { $regex: new RegExp(`^${normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+        $or: [
+          { 'credential.credentialSubject.email': emailRegex },
+          { 'credential.credentialSubject.contactPoint.email': emailRegex },
+        ],
         apiKey,
         status: { $ne: 'revoked' },
       })

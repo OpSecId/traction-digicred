@@ -1,7 +1,10 @@
 <template>
   <div class="admin-tenants">
     <div class="section-header">
-      <h2 class="section-title">Provisioned tenants</h2>
+      <div>
+        <h2 class="section-title">Provisioned tenants</h2>
+        <p class="section-desc">Tenants created when onboarding requests are approved, or via out-of-band creation.</p>
+      </div>
       <div class="header-actions">
         <button
           type="button"
@@ -36,17 +39,22 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>ID</th>
+            <th>Tenant ID</th>
             <th>Status</th>
             <th>DID</th>
             <th>Wallet</th>
             <th>Request</th>
             <th>Created</th>
-            <th>Actions</th>
+            <th class="cell-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(t, idx) in validTenants" :key="t?.id ?? `row-${idx}`">
+          <tr
+            v-for="(t, idx) in validTenants"
+            :key="t?.id ?? `row-${idx}`"
+            :class="{ processed: t?.status === 'revoked' }"
+            @click="t?.id && openDetails(t.id)"
+          >
             <td><code class="tenant-id">{{ t?.id }}</code></td>
             <td>
               <span v-if="t?.status === 'revoked'" class="status-badge revoked">Revoked</span>
@@ -56,32 +64,26 @@
             <td><code v-if="t?.walletId" class="mono">{{ t.walletId }}</code><span v-else class="text-muted">—</span></td>
             <td><code v-if="t?.tenantRequestId" class="mono truncate">{{ shortId(t.tenantRequestId) }}</code><span v-else class="text-muted">—</span></td>
             <td>{{ t?.createdAt ? formatDate(t.createdAt) : '—' }}</td>
-            <td>
-              <button
-                type="button"
-                class="btn-icon"
-                title="View details"
-                @click="t?.id && openDetails(t.id)"
-              >
-                <i class="pi pi-eye"></i>
-              </button>
-              <button
-                type="button"
-                class="btn-icon"
-                title="Show credential"
-                @click="t?.id && openCredentialModal(t.id)"
-              >
-                <i class="pi pi-file"></i>
-              </button>
-              <button
-                v-if="t?.status !== 'revoked'"
-                type="button"
-                class="btn-icon danger"
-                title="Revoke access"
-                @click="t && confirmRevoke(t)"
-              >
-                <i class="pi pi-ban"></i>
-              </button>
+            <td class="cell-actions" @click.stop>
+              <div class="actions-wrap">
+                <button type="button" class="btn-view" @click="t?.id && openDetails(t.id)">
+                  <i class="pi pi-eye"></i>
+                  View
+                </button>
+                <button type="button" class="btn-view" @click="t?.id && openCredentialModal(t.id)">
+                  <i class="pi pi-file"></i>
+                  Credential
+                </button>
+                <button
+                  v-if="t?.status !== 'revoked'"
+                  type="button"
+                  class="btn-revoke"
+                  @click="t && confirmRevoke(t)"
+                >
+                  <i class="pi pi-ban"></i>
+                  Revoke
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -417,6 +419,12 @@ function formatDate(iso: string) {
 @use '@/assets/variables.scss' as *;
 
 .admin-tenants {
+  .section-desc {
+    margin: -8px 0 0;
+    font-size: 0.9rem;
+    color: $marketplace-text-muted;
+  }
+
   .header-actions {
     display: flex;
     gap: 8px;
@@ -442,7 +450,27 @@ function formatDate(iso: string) {
     }
   }
 
-  .tenant-id,
+  tr {
+    cursor: pointer;
+    transition: background 0.15s;
+    &:hover {
+      background: rgba(0, 51, 102, 0.04);
+    }
+  }
+
+  tr.processed {
+    opacity: 0.85;
+  }
+
+  .tenant-id {
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    background: rgba(0, 51, 102, 0.08);
+    border-radius: 4px;
+    color: $marketplace-primary;
+    font-family: ui-monospace, monospace;
+  }
+
   .mono {
     font-size: 0.8rem;
     word-break: break-all;
@@ -452,6 +480,10 @@ function formatDate(iso: string) {
   .text-muted {
     color: $marketplace-text-muted;
     font-size: 0.85rem;
+  }
+
+  .text-small {
+    font-size: 0.8rem;
   }
 
   .hint {
@@ -467,29 +499,46 @@ function formatDate(iso: string) {
     text-overflow: ellipsis;
   }
 
-  .btn-icon {
+  .cell-actions {
+    min-width: 180px;
+    white-space: nowrap;
+  }
+
+  .actions-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .btn-view,
+  .btn-revoke {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: $marketplace-text-muted;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+    border: none;
+    transition: opacity 0.2s;
+  }
 
-    &:hover {
-      background: rgba(0, 51, 102, 0.08);
-      color: $marketplace-primary;
-    }
+  .btn-view {
+    background: transparent;
+    color: $marketplace-primary;
+    border: 1px solid rgba(0, 51, 102, 0.3);
+  }
 
-    &.danger:hover {
-      background: rgba(200, 50, 50, 0.1);
-      color: $marketplace-danger;
-    }
+  .btn-revoke {
+    background: transparent;
+    color: $marketplace-warning;
+    border: 1px solid rgba(207, 150, 5, 0.5);
+  }
+
+  .btn-revoke:hover {
+    background: rgba(207, 150, 5, 0.1);
   }
 
   .status-badge {

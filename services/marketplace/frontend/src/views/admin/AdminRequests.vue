@@ -76,26 +76,37 @@
               <span v-else class="status-badge pending">Pending</span>
             </td>
             <td class="cell-actions" @click.stop>
-              <template v-if="req.status === 'pending'">
-                <button type="button" class="btn-view" @click="openDetail(req)">
-                  <i class="pi pi-eye"></i>
-                  View
-                </button>
-                <button type="button" class="btn-reject" @click="rejectRequest(req.id)">
-                  <i class="pi pi-times"></i>
-                  Reject
-                </button>
-                <button type="button" class="btn-approve" @click="approveRequest(req.id)">
-                  <i class="pi pi-check"></i>
-                  Approve
-                </button>
-              </template>
-              <template v-else>
-                <button type="button" class="btn-view" @click="openDetail(req)">
-                  <i class="pi pi-eye"></i>
-                  View
-                </button>
-              </template>
+              <div class="actions-wrap">
+                <template v-if="req.status === 'pending'">
+                  <button type="button" class="btn-view" @click="openDetail(req)">
+                    <i class="pi pi-eye"></i>
+                    View
+                  </button>
+                  <button type="button" class="btn-reject" @click="rejectRequest(req.id)">
+                    <i class="pi pi-times"></i>
+                    Reject
+                  </button>
+                  <button type="button" class="btn-approve" @click="approveRequest(req.id)">
+                    <i class="pi pi-check"></i>
+                    Approve
+                  </button>
+                </template>
+                <template v-else>
+                  <button type="button" class="btn-view" @click="openDetail(req)">
+                    <i class="pi pi-eye"></i>
+                    View
+                  </button>
+                  <button
+                    v-if="req.status === 'approved' && tenantByRequestId[req.id]"
+                    type="button"
+                    class="btn-revoke"
+                    @click="confirmRevoke(tenantByRequestId[req.id].id)"
+                  >
+                    <i class="pi pi-ban"></i>
+                    Revoke
+                  </button>
+                </template>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -184,6 +195,15 @@
               Approve
             </button>
           </div>
+          <div
+            v-else-if="selectedReservation.status === 'approved' && selectedTenant"
+            class="modal-actions"
+          >
+            <button type="button" class="btn-revoke" @click="revokeFromModal">
+              <i class="pi pi-ban"></i>
+              Revoke tenant
+            </button>
+          </div>
           </template>
 
           <!-- JSON view -->
@@ -237,9 +257,11 @@ import { ref, computed, onMounted } from 'vue';
 import { useTenantRequestStore } from '@/store/tenantRequestStore';
 import type { TenancyType } from '@/store/tenantRequestStore';
 import type { TenantRequest } from '@/types/demo';
+import * as adminApi from '@/api/admin';
 
 const tenantStore = useTenantRequestStore();
 const loading = ref(false);
+const tenants = ref<adminApi.Tenant[]>([]);
 const showDetailModal = ref(false);
 const selectedReservation = ref<TenantRequest | null>(null);
 const showRawCredential = ref(false);
@@ -253,6 +275,20 @@ const allRequests = computed(() => [
   ...tenantStore.approvedRequests,
   ...tenantStore.rejectedRequests,
 ]);
+
+const tenantByRequestId = computed(() => {
+  const map: Record<string, adminApi.Tenant> = {};
+  for (const t of tenants.value) {
+    if (t.tenantRequestId) map[t.tenantRequestId] = t;
+  }
+  return map;
+});
+
+const selectedTenant = computed(() => {
+  const req = selectedReservation.value;
+  if (!req?.id) return null;
+  return tenantByRequestId.value[req.id] ?? null;
+});
 
 const credValidFrom = computed(() => {
   const c = selectedReservation.value?.credential as Record<string, unknown> | undefined;
@@ -275,9 +311,17 @@ const highlightedCredential = computed(() => {
 async function refresh() {
   loading.value = true;
   try {
-    await tenantStore.fetchRequests();
+    await Promise.all([tenantStore.fetchRequests(), loadTenants()]);
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadTenants() {
+  try {
+    tenants.value = await adminApi.listTenants();
+  } catch {
+    tenants.value = [];
   }
 }
 
@@ -338,6 +382,29 @@ async function copyApiKey() {
 
 async function rejectRequest(id: string) {
   await tenantStore.reject(id);
+}
+
+async function confirmRevoke(tenantId: string) {
+  if (!confirm('Revoke this tenant? They will no longer be able to sign in.')) return;
+  try {
+    await adminApi.revokeTenant(tenantId);
+    await loadTenants();
+    closeDetail();
+  } catch {
+    alert('Failed to revoke tenant.');
+  }
+}
+
+async function revokeFromModal() {
+  const t = selectedTenant.value;
+  if (!t?.id) return;
+  try {
+    await adminApi.revokeTenant(t.id);
+    await loadTenants();
+    closeDetail();
+  } catch {
+    alert('Failed to revoke tenant.');
+  }
 }
 
 function formatDate(iso: string | undefined) {
@@ -480,14 +547,21 @@ function tenancyTypeClass(type: TenancyType | undefined) {
   }
 
   .cell-actions {
+    min-width: 180px;
+    white-space: nowrap;
+  }
+
+  .actions-wrap {
     display: flex;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
     align-items: center;
   }
 
   .btn-view,
   .btn-approve,
-  .btn-reject {
+  .btn-reject,
+  .btn-revoke {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -515,6 +589,16 @@ function tenancyTypeClass(type: TenancyType | undefined) {
     background: transparent;
     color: $marketplace-danger;
     border: 1px solid rgba(248, 73, 73, 0.4);
+  }
+
+  .btn-revoke {
+    background: transparent;
+    color: $marketplace-warning;
+    border: 1px solid rgba(207, 150, 5, 0.5);
+  }
+
+  .btn-revoke:hover {
+    background: rgba(207, 150, 5, 0.1);
   }
 }
 

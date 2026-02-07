@@ -81,9 +81,9 @@
           <i class="pi pi-send"></i>
           Join {{ job.employerName }}'s channel
         </button>
-        <button class="back-btn-secondary" @click="router.push('/')">
+        <button class="back-btn-secondary" @click="router.back()">
           <i class="pi pi-arrow-left"></i>
-          Back to marketplace
+          Back
         </button>
       </div>
     </div>

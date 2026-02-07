@@ -72,6 +72,12 @@ export function profileSubjectFromCredential(profile: EmployerProfile | null): R
   return cred?.credentialSubject ?? {};
 }
 
+/** Extract email from credentialSubject (contactPoint.email or direct email for backward compatibility). */
+export function emailFromSubject(subject: Record<string, unknown>): string | undefined {
+  const cp = subject.contactPoint as Record<string, unknown> | undefined;
+  return (cp?.email as string) ?? (subject.email as string) ?? undefined;
+}
+
 /** Employer workflow type ids and labels. */
 export const WORKFLOW_TYPES = [
   { id: 'apply-job', label: 'Apply for a job' },

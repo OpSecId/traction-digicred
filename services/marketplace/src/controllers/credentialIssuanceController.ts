@@ -29,8 +29,11 @@ export function buildMarketplaceProfileCredential(
     id: tenantRequest.id,
     type: 'Organization',
     name: tenantRequest.name,
-    email: tenantRequest.email,
     tenancyType: tenantRequest.tenancyType ?? 'Employer',
+    contactPoint: {
+      type: 'ContactPoint',
+      email: tenantRequest.email,
+    },
   };
   if (tenantRequest.website) credentialSubject.url = tenantRequest.website;
   if (tenantRequest.industry) credentialSubject.industry = tenantRequest.industry;

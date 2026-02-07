@@ -30,9 +30,14 @@ export function buildEmployerProfileCredential(
     name: input.employerName,
     tenancyType: 'Employer',
   };
-  if (input.employerEmail) credentialSubject.email = input.employerEmail;
   if (input.industry) credentialSubject.industry = input.industry;
   if (input.website) credentialSubject.url = input.website;
+  if (input.employerEmail) {
+    credentialSubject.contactPoint = {
+      type: 'ContactPoint',
+      email: input.employerEmail,
+    };
+  }
 
   const issuerPlaceholder = input.employerId.startsWith('urn:')
     ? input.employerId

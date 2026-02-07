@@ -31,27 +31,60 @@
     </div>
 
     <div v-if="employerStore.isEmployer" class="employer-dashboard">
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <i class="pi pi-briefcase stat-icon"></i>
+          <span class="stat-value">{{ jobCount }}</span>
+          <span class="stat-label">Job postings</span>
+        </div>
+        <div class="stat-card">
+          <i class="pi pi-sitemap stat-icon"></i>
+          <span class="stat-value">{{ workflowStats.running }}</span>
+          <span class="stat-label">Workflows in progress</span>
+        </div>
+        <div class="stat-card">
+          <i class="pi pi-check-circle stat-icon"></i>
+          <span class="stat-value">{{ workflowStats.completed }}</span>
+          <span class="stat-label">Workflows completed</span>
+        </div>
+      </div>
+
+      <!-- Profile & Contact -->
       <div class="marketplace-card employer-profile-card">
         <div class="profile-card-header">
           <i class="pi pi-building"></i>
-          <span>Employer account</span>
+          <span>Organization</span>
         </div>
         <div class="profile-card-body">
           <div class="profile-name">{{ profileName }}</div>
-          <div v-if="profileEmail" class="profile-detail">
-            <i class="pi pi-envelope"></i>
-            <a :href="`mailto:${profileEmail}`">{{ profileEmail }}</a>
-          </div>
           <div v-if="profileIndustry" class="profile-detail">
             <i class="pi pi-briefcase"></i>
             {{ profileIndustry }}
           </div>
-          <div v-if="profileWebsite" class="profile-detail">
-            <i class="pi pi-globe"></i>
-            <a :href="profileWebsite" target="_blank" rel="noopener noreferrer">{{ profileWebsite }}</a>
-          </div>
-          <p class="profile-meta">{{ jobCount }} job posting(s)</p>
         </div>
+
+        <div class="contact-section">
+          <h4 class="contact-section-title"><i class="pi pi-user"></i> Contact information</h4>
+          <dl class="contact-list">
+            <div v-if="profileEmail" class="contact-row">
+              <dt>Email</dt>
+              <dd><a :href="`mailto:${profileEmail}`">{{ profileEmail }}</a></dd>
+            </div>
+            <div v-if="profileWebsite" class="contact-row">
+              <dt>Website</dt>
+              <dd><a :href="profileWebsite" target="_blank" rel="noopener noreferrer">{{ profileWebsite }}</a></dd>
+            </div>
+            <div v-if="!profileEmail && !profileWebsite" class="contact-row contact-row-empty">
+              <dd class="contact-empty">No contact details on file</dd>
+            </div>
+          </dl>
+          <router-link to="/reservation/check" class="request-update-link">
+            <i class="pi pi-pencil"></i>
+            Request profile update
+          </router-link>
+        </div>
+
         <div class="employer-actions">
           <router-link to="/tenant/jobs" class="action-btn primary">
             <i class="pi pi-list"></i>
@@ -105,6 +138,12 @@
           Don't have an account?
           <router-link to="/tenant/onboard" class="request-tenancy-link">Request tenancy</router-link>
         </p>
+        <p class="check-reservation-prompt">
+          <router-link to="/reservation/check" class="request-tenancy-link">
+            <i class="pi pi-search"></i>
+            Check reservation status
+          </router-link>
+        </p>
       </div>
     </div>
   </div>
@@ -116,7 +155,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useDemoStore } from '@/store/demoStore';
 import { useEmployerStore } from '@/store/employerStore';
 import { employerLogin, tenantLogin } from '@/api/auth';
-import { getEmployerProfile, listJobPostings, profileSubjectFromCredential } from '@/api/employerJobs';
+import { getEmployerProfile, listJobPostings, listEmployerWorkflows, profileSubjectFromCredential, emailFromSubject } from '@/api/employerJobs';
 
 const route = useRoute();
 const router = useRouter();
@@ -172,6 +211,7 @@ const jobCount = computed(() => {
 
 const employerProfile = ref<Awaited<ReturnType<typeof getEmployerProfile>>>(null);
 const apiJobCount = ref(0);
+const workflows = ref<Awaited<ReturnType<typeof listEmployerWorkflows>>>([]);
 
 const subject = computed(() => profileSubjectFromCredential(employerProfile.value));
 
@@ -181,9 +221,17 @@ const profileName = computed(() => {
   return currentEmployer.value?.name ?? 'Employer';
 });
 
-const profileEmail = computed(() => subject.value.email as string | undefined);
+const profileEmail = computed(() => emailFromSubject(subject.value));
 const profileIndustry = computed(() => subject.value.industry as string | undefined);
 const profileWebsite = computed(() => (subject.value.url as string) || (subject.value.website as string) || undefined);
+
+const workflowStats = computed(() => {
+  const list = workflows.value;
+  return {
+    running: list.filter((w) => w.status === 'running').length,
+    completed: list.filter((w) => w.status === 'completed').length,
+  };
+});
 
 watch(
   () => employerStore.currentEmployerId,
@@ -191,18 +239,22 @@ watch(
     if (!id) {
       employerProfile.value = null;
       apiJobCount.value = 0;
+      workflows.value = [];
       return;
     }
     try {
-      const [profile, jobs] = await Promise.all([
+      const [profile, jobsList, workflowsList] = await Promise.all([
         getEmployerProfile(id),
         listJobPostings(id),
+        listEmployerWorkflows(id),
       ]);
       employerProfile.value = profile;
-      apiJobCount.value = jobs.length;
+      apiJobCount.value = jobsList.length;
+      workflows.value = workflowsList;
     } catch {
       employerProfile.value = null;
       apiJobCount.value = 0;
+      workflows.value = [];
     }
   },
   { immediate: true }
@@ -244,11 +296,53 @@ async function handleLogin() {
 
 .employer-hub {
   padding: 16px 20px 32px;
-  max-width: 480px;
+  max-width: 560px;
   margin: 0 auto;
 
   @media (min-width: $breakpoint-desktop) {
     padding: 24px 32px 48px;
+  }
+}
+
+.employer-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px;
+  background: $marketplace-bg-card;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 51, 102, 0.06);
+  border: 1px solid $marketplace-panel-border;
+
+  .stat-icon {
+    font-size: 1.5rem;
+    color: $marketplace-primary;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $marketplace-primary;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: $marketplace-text-muted;
+    text-align: center;
+    line-height: 1.2;
   }
 }
 
@@ -324,10 +418,90 @@ async function handleLogin() {
       }
     }
 
-    .profile-meta {
-      font-size: 0.9rem;
+  }
+
+  .contact-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid $marketplace-panel-border;
+  }
+
+  .contact-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $marketplace-text-muted;
+    margin: 0 0 12px 0;
+
+    i {
+      color: $marketplace-primary;
+    }
+  }
+
+  .contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .contact-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0;
+
+    dt {
+      flex-shrink: 0;
+      width: 70px;
+      font-size: 0.85rem;
+      font-weight: 500;
       color: $marketplace-text-muted;
-      margin: 12px 0 0 0;
+      margin: 0;
+    }
+
+    dd {
+      margin: 0;
+      font-size: 0.9rem;
+
+      a {
+        color: $marketplace-primary;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  .contact-row-empty dd {
+    flex: 1;
+  }
+
+  .contact-empty {
+    font-size: 0.9rem;
+    color: $marketplace-text-muted;
+    font-style: italic;
+  }
+
+  .request-update-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $marketplace-primary;
+    text-decoration: none;
+    transition: color 0.2s;
+
+    &:hover {
+      color: $marketplace-secondary;
+      text-decoration: underline;
     }
   }
 
@@ -555,6 +729,18 @@ async function handleLogin() {
   font-size: 0.9rem;
   color: $marketplace-text-muted;
   text-align: center;
+}
+
+.check-reservation-prompt {
+  margin: 12px 0 0 0;
+  font-size: 0.9rem;
+  text-align: center;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
 }
 
 .request-tenancy-link {

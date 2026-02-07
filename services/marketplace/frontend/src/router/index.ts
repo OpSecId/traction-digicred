@@ -1,9 +1,17 @@
 import { createWebHistory, createRouter } from 'vue-router';
 import AppLayout from '@/components/AppLayout.vue';
+import ChannelLayout from '@/components/ChannelLayout.vue';
 import { useAdminStore } from '@/store/adminStore';
 import { isMobile } from '@/utils/isMobile';
 
+const CHANNEL_PATHS = ['/connect', '/channel', '/scholarships', '/services', '/education', '/job/'];
+
+function isChannelPath(path: string): boolean {
+  return CHANNEL_PATHS.some((p) => path === p || (p.endsWith('/') && path.startsWith(p)));
+}
+
 const routes = [
+  // Main app: landing, reservation, tenant, innkeeper (desktop + mobile for non-channel)
   {
     path: '/',
     component: AppLayout,
@@ -19,37 +27,6 @@ const routes = [
         name: 'CheckReservation',
         component: () => import('@/views/CheckReservation.vue'),
         meta: { title: 'Check reservation | Marketplace' },
-      },
-      {
-        path: 'connect',
-        name: 'Connect',
-        component: () => import('@/views/Discovery.vue'),
-        meta: { title: 'Channel', nav: 'channel', marketplaceType: 'jobs' },
-        // OOB deep link: /connect?_oobid=xxx — renders channel, _oobid available in route.query
-      },
-      {
-        path: 'channel',
-        name: 'Discovery',
-        component: () => import('@/views/Discovery.vue'),
-        meta: { title: 'Channel', nav: 'channel', marketplaceType: 'jobs' },
-      },
-      {
-        path: 'scholarships',
-        name: 'Scholarships',
-        component: () => import('@/views/Scholarships.vue'),
-        meta: { title: 'Scholarships', nav: 'channel', marketplaceType: 'scholarships' },
-      },
-      {
-        path: 'services',
-        name: 'Services',
-        component: () => import('@/views/Services.vue'),
-        meta: { title: 'Services', nav: 'channel', marketplaceType: 'services' },
-      },
-      {
-        path: 'education',
-        name: 'Education',
-        component: () => import('@/views/Education.vue'),
-        meta: { title: 'Education', nav: 'channel', marketplaceType: 'education' },
       },
       {
         path: 'innkeeper',
@@ -156,6 +133,44 @@ const routes = [
         component: () => import('@/views/JobApplicants.vue'),
         meta: { title: 'Applicants' },
       },
+    ],
+  },
+  // Channel: mobile-only, Uber Eats–like (no sign-in, bottom nav) — matched after main app
+  {
+    path: '/',
+    component: ChannelLayout,
+    meta: { channel: true },
+    children: [
+      {
+        path: 'connect',
+        name: 'Connect',
+        component: () => import('@/views/Discovery.vue'),
+        meta: { title: 'Channel', marketplaceType: 'jobs' },
+      },
+      {
+        path: 'channel',
+        name: 'Discovery',
+        component: () => import('@/views/Discovery.vue'),
+        meta: { title: 'Channel', marketplaceType: 'jobs' },
+      },
+      {
+        path: 'scholarships',
+        name: 'Scholarships',
+        component: () => import('@/views/Scholarships.vue'),
+        meta: { title: 'Scholarships', marketplaceType: 'scholarships' },
+      },
+      {
+        path: 'services',
+        name: 'Services',
+        component: () => import('@/views/Services.vue'),
+        meta: { title: 'Services', marketplaceType: 'services' },
+      },
+      {
+        path: 'education',
+        name: 'Education',
+        component: () => import('@/views/Education.vue'),
+        meta: { title: 'Education', marketplaceType: 'education' },
+      },
       {
         path: 'job/:jobId',
         name: 'JobView',
@@ -172,6 +187,10 @@ const router = createRouter({
 });
 
 router.beforeEach((to) => {
+  // Channel: mobile-only — desktop users redirect to landing
+  if (isChannelPath(to.path) && !isMobile()) {
+    return { path: '/', replace: true };
+  }
   // Mobile users: redirect root to channel view
   if (to.path === '/' && isMobile()) {
     return { path: '/channel', replace: true };

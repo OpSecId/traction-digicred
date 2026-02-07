@@ -21,6 +21,13 @@ const routes = [
         meta: { title: 'Check reservation | Marketplace' },
       },
       {
+        path: 'connect',
+        name: 'Connect',
+        component: () => import('@/views/Discovery.vue'),
+        meta: { title: 'Channel', nav: 'channel', marketplaceType: 'jobs' },
+        // OOB deep link: /connect?_oobid=xxx — renders channel, _oobid available in route.query
+      },
+      {
         path: 'channel',
         name: 'Discovery',
         component: () => import('@/views/Discovery.vue'),

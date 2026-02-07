@@ -140,18 +140,18 @@ const rightTabs = [
 
 const showFloatingBar = computed(() => {
   const p = route.path;
-  return p === '/channel' || p === '/scholarships' || p === '/services' || p === '/education';
+  return p === '/channel' || p === '/connect' || p === '/scholarships' || p === '/services' || p === '/education';
 });
 
 const showFooter = computed(() => {
   const p = route.path;
-  return !(p === '/channel' || p.startsWith('/scholarships') || p.startsWith('/services') || p.startsWith('/education') || p.startsWith('/job/'));
+  return !(p === '/channel' || p === '/connect' || p.startsWith('/scholarships') || p.startsWith('/services') || p.startsWith('/education') || p.startsWith('/job/'));
 });
 
 const currentMarketplaceType = computed(() => {
   const type = route.meta.marketplaceType as string | undefined;
   if (type) return type;
-  if (route.path === '/channel') return 'jobs';
+  if (route.path === '/channel' || route.path === '/connect') return 'jobs';
   if (route.path.startsWith('/scholarships')) return 'scholarships';
   if (route.path.startsWith('/services')) return 'services';
   if (route.path.startsWith('/education')) return 'education';
@@ -182,7 +182,7 @@ const navItems = [
 
 function isActive(nav: string) {
   if (nav === 'landing') return route.path === '/';
-  if (nav === 'channel') return route.path === '/channel' || route.path.startsWith('/scholarships') || route.path.startsWith('/services') || route.path.startsWith('/education') || route.path.startsWith('/job/');
+  if (nav === 'channel') return route.path === '/channel' || route.path === '/connect' || route.path.startsWith('/scholarships') || route.path.startsWith('/services') || route.path.startsWith('/education') || route.path.startsWith('/job/');
   if (nav === 'tenant') return route.path.startsWith('/tenant');
   if (nav === 'innkeeper') return route.path.startsWith('/innkeeper');
   if (nav === 'reservation') return route.path.startsWith('/reservation');

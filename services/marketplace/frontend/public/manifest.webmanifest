@@ -1,0 +1,33 @@
+{
+  "name": "Apply Utopia",
+  "short_name": "Apply Utopia",
+  "description": "Discover jobs and manage your career with Apply Utopia",
+  "theme_color": "#003366",
+  "background_color": "#F5F5F5",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
+  "categories": ["business", "productivity", "education"],
+  "icons": [
+    {
+      "src": "/img/digicred/digicred.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/digicred/digicred.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/img/digicred/digicred.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

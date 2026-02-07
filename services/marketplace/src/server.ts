@@ -484,6 +484,20 @@ app.post('/api/innkeeper/workflows', async (req, res) => {
   }
 });
 
+// Derive base URL from request (Origin/Referer) or config — so invitation links use the frontend's port
+function getInvitationBaseUrl(req: express.Request): string {
+  const origin = req.get('origin') || req.get('referer');
+  if (origin) {
+    try {
+      const u = new URL(origin);
+      return `${u.protocol}//${u.host}`.replace(/\/$/, '');
+    } catch {
+      /* ignore */
+    }
+  }
+  return marketplaceBaseUrl.replace(/\/$/, '');
+}
+
 // Marketplace plugin: create OOB invitation (proxies to ACA-Py agent, stores in MongoDB for short URL)
 app.post('/api/innkeeper/marketplace/invitation', async (req, res) => {
   try {
@@ -500,8 +514,9 @@ app.post('/api/innkeeper/marketplace/invitation', async (req, res) => {
         contentUrl: body.content_url as string | undefined,
         invitation: result.invitation as Record<string, unknown>,
       });
-      const id = (doc as { id?: string }).id ?? oobId;
-      result.invitation_url = `${marketplaceBaseUrl.replace(/\/$/, '')}/oob/${id}`;
+      const id = String((doc as { id?: string }).id ?? oobId ?? '');
+      const base = getInvitationBaseUrl(req);
+      result.invitation_url = `${base}/connect?_oobid=${encodeURIComponent(id)}`;
     }
     res.json(result);
   } catch (err) {
@@ -514,7 +529,11 @@ app.post('/api/innkeeper/marketplace/invitation', async (req, res) => {
 // OOB short URL redirect: /oob/:id -> /connect?_oobid={uuid}
 app.get('/oob/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id ?? '').trim();
+    if (!id) {
+      res.status(400).json({ error: 'Missing invitation id' });
+      return;
+    }
     const doc = await invitationRepo.getById(id);
     if (!doc) {
       res.status(404).json({ error: 'Invitation not found' });
@@ -528,16 +547,42 @@ app.get('/oob/:id', async (req, res) => {
   }
 });
 
-// Get latest invitation URL (public, for Join channel button)
-app.get('/api/oob/active', async (_req, res) => {
+// GET /connect?_oobid=xxx — return invitation as application/json (OOB deep link)
+app.get('/connect', async (req, res, next) => {
+  let oobid = typeof req.query._oobid === 'string' ? req.query._oobid.trim() : '';
+  if (!oobid && req.url) {
+    const match = /[?&]_oobid=([^&]+)/.exec(req.url);
+    if (match) oobid = decodeURIComponent(match[1]).trim();
+  }
+  if (!oobid) {
+    next();
+    return;
+  }
+  try {
+    const doc = await invitationRepo.getById(oobid);
+    if (!doc?.oobB64) {
+      res.status(404).json({ error: 'Invitation not found' });
+      return;
+    }
+    res.setHeader('Content-Type', 'application/json');
+    res.json({ oob: String(doc.oobB64), invitation: doc.invitation });
+  } catch (err) {
+    console.error('OOB connect resolve error:', err);
+    res.status(500).json({ error: 'Failed to resolve invitation' });
+  }
+});
+
+// Get latest invitation URL (public, for Join channel button) — didcomm://link?oob= format
+app.get('/api/oob/active', async (req, res) => {
   try {
     const doc = await invitationRepo.getLatest();
     if (!doc?.oobB64) {
       res.json({ invitation_url: null });
       return;
     }
-    const fullUrl = `${marketplaceBaseUrl.replace(/\/$/, '')}/connect?oob=${encodeURIComponent(String(doc.oobB64))}`;
-    res.json({ invitation_url: fullUrl });
+    const oobB64 = String(doc.oobB64);
+    const invitationUrl = `didcomm://link?oob=${encodeURIComponent(oobB64)}`;
+    res.json({ invitation_url: invitationUrl });
   } catch (err) {
     console.error('OOB active error:', err);
     res.json({ invitation_url: null });
@@ -801,7 +846,13 @@ app.get('/ns/marketplace/v1', (_req, res) => {
 const frontendDist = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
-  app.get('*', (_req, res) => {
+  // SPA fallback: serve index.html only for navigational requests (skip /assets, /img, etc.)
+  app.get('*', (req, res, next) => {
+    const p = req.path;
+    if (p.startsWith('/assets/') || p.startsWith('/img/') || /\.(js|css|ico|png|svg|woff2?|json|webmanifest)$/i.test(p)) {
+      res.status(404).end();
+      return;
+    }
     res.sendFile(path.join(frontendDist, 'index.html'));
   });
 }

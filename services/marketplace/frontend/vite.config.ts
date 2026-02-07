@@ -145,6 +145,14 @@ export default defineConfig({
     host: '0.0.0.0',
     allowedHosts: getAllowedHosts(),
     proxy: {
+      '/connect': {
+        target: process.env.VITE_API_TARGET || 'http://127.0.0.1:5174',
+        changeOrigin: true,
+      },
+      '/oob': {
+        target: process.env.VITE_API_TARGET || 'http://127.0.0.1:5174',
+        changeOrigin: true,
+      },
       '/api/config/demo': {
         target: process.env.VITE_API_TARGET || 'http://127.0.0.1:5174',
         changeOrigin: true,

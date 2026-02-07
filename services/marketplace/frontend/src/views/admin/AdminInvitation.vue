@@ -71,8 +71,9 @@
             readonly
             class="input-wide url-input"
           />
-          <button type="button" class="copy-btn" @click="copyUrl">
-            <i class="pi pi-copy"></i> Copy
+          <button type="button" class="copy-btn" :class="{ copied: copyFeedback }" @click="copyUrl">
+            <i :class="copyFeedback ? 'pi pi-check' : 'pi pi-copy'"></i>
+            {{ copyFeedback ? 'Copied!' : 'Copy' }}
           </button>
         </div>
       </div>
@@ -86,6 +87,7 @@ import { ref, reactive } from 'vue';
 import * as adminApi from '@/api/admin';
 
 const creating = ref(false);
+const copyFeedback = ref(false);
 const result = ref<adminApi.MarketplaceInvitationResponse | null>(null);
 
 const form = reactive({
@@ -116,10 +118,22 @@ async function create() {
   }
 }
 
-function copyUrl() {
+async function copyUrl() {
   if (!result.value?.invitation_url) return;
-  navigator.clipboard.writeText(result.value.invitation_url);
-  alert('Copied to clipboard');
+  try {
+    await navigator.clipboard.writeText(result.value.invitation_url);
+    copyFeedback.value = true;
+    setTimeout(() => { copyFeedback.value = false; }, 1800);
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.value = result.value.invitation_url;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    copyFeedback.value = true;
+    setTimeout(() => { copyFeedback.value = false; }, 1800);
+  }
 }
 </script>
 
@@ -252,10 +266,16 @@ function copyUrl() {
         border: 1px solid $marketplace-panel-border;
         background: white;
         cursor: pointer;
-        transition: background 0.2s;
+        transition: background 0.2s, border-color 0.2s, color 0.2s;
 
         &:hover {
           background: rgba(0, 51, 102, 0.06);
+        }
+
+        &.copied {
+          border-color: #22c55e;
+          color: #22c55e;
+          background: rgba(34, 197, 94, 0.08);
         }
       }
     }

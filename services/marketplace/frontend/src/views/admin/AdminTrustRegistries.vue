@@ -55,8 +55,9 @@
           <p class="success-msg">Invitation created</p>
           <div class="url-row">
             <input :value="invitationResult?.invitation_url" readonly class="url-input" />
-            <button type="button" class="btn-copy" @click="copyInvitationUrl">
-              <i class="pi pi-copy"></i> Copy
+            <button type="button" class="btn-copy" :class="{ copied: copyFeedback }" @click="copyInvitationUrl">
+              <i :class="copyFeedback ? 'pi pi-check' : 'pi pi-copy'"></i>
+              {{ copyFeedback ? 'Copied!' : 'Copy' }}
             </button>
           </div>
           <button type="button" class="btn-done" @click="closeInvitationModal">Done</button>
@@ -152,6 +153,7 @@ const registries = ref<adminApi.TrustRegistry[]>([]);
 const loading = ref(false);
 const showInvitationModal = ref(false);
 const creating = ref(false);
+const copyFeedback = ref(false);
 const invitationResult = ref<adminApi.MarketplaceInvitationResponse | null>(null);
 
 const invitationForm = reactive({
@@ -196,10 +198,22 @@ async function createInvitation() {
   }
 }
 
-function copyInvitationUrl() {
+async function copyInvitationUrl() {
   if (!invitationResult.value?.invitation_url) return;
-  navigator.clipboard.writeText(invitationResult.value.invitation_url);
-  alert('Copied to clipboard');
+  try {
+    await navigator.clipboard.writeText(invitationResult.value.invitation_url);
+    copyFeedback.value = true;
+    setTimeout(() => { copyFeedback.value = false; }, 1800);
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.value = invitationResult.value.invitation_url;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    copyFeedback.value = true;
+    setTimeout(() => { copyFeedback.value = false; }, 1800);
+  }
 }
 
 function closeInvitationModal() {
@@ -405,9 +419,16 @@ onMounted(() => refresh());
         border: 1px solid $marketplace-panel-border;
         background: white;
         cursor: pointer;
+        transition: background 0.2s, border-color 0.2s, color 0.2s;
 
         &:hover {
           background: rgba(0, 51, 102, 0.06);
+        }
+
+        &.copied {
+          border-color: #22c55e;
+          color: #22c55e;
+          background: rgba(34, 197, 94, 0.08);
         }
       }
     }

@@ -100,7 +100,7 @@ const didcommUrl = ref<string | null>(null);
 onMounted(async () => {
   const url = await getActiveInvitationUrl();
   if (url) {
-    didcommUrl.value = url.replace(/^https:\/\//, 'didcomm://');
+    didcommUrl.value = url;
   }
 });
 </script>

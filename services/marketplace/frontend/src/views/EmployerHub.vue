@@ -79,18 +79,18 @@
               v-model="loginEmail"
               type="email"
               required
-              placeholder="hr@pizzautopia.com"
+              placeholder="you@company.com"
               autocomplete="email"
             />
           </div>
           <div class="form-field">
-            <label for="login-password">Password</label>
+            <label for="login-password">Password or API key</label>
             <input
               id="login-password"
               v-model="loginPassword"
               type="password"
               required
-              placeholder="••••••••"
+              placeholder="•••••••• or your API key"
               autocomplete="current-password"
             />
           </div>
@@ -101,7 +101,6 @@
             {{ loggingIn ? 'Signing in...' : 'Sign in' }}
           </button>
         </form>
-        <p class="login-hint">Demo: hr@pizzautopia.com, hr@loc.gov / password: demo123</p>
         <p class="request-tenancy-prompt">
           Don't have an account?
           <router-link to="/tenant/onboard" class="request-tenancy-link">Request tenancy</router-link>
@@ -116,7 +115,7 @@ import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useDemoStore } from '@/store/demoStore';
 import { useEmployerStore } from '@/store/employerStore';
-import { employerLogin } from '@/api/auth';
+import { employerLogin, tenantLogin } from '@/api/auth';
 import { getEmployerProfile, listJobPostings, profileSubjectFromCredential } from '@/api/employerJobs';
 
 const route = useRoute();
@@ -212,14 +211,25 @@ watch(
 async function handleLogin() {
   loginError.value = '';
   loggingIn.value = true;
+  const email = loginEmail.value.trim();
+  const cred = loginPassword.value;
   try {
-    const { employerId } = await employerLogin(loginEmail.value.trim(), loginPassword.value);
+    try {
+      const { employerId } = await employerLogin(email, cred);
+      employerStore.setEmployer(employerId);
+      return;
+    } catch (err: unknown) {
+      const status = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { status?: number } }).response?.status : null;
+      if (status !== 401) throw err;
+    }
+    const { employerId } = await tenantLogin(email, cred);
     employerStore.setEmployer(employerId);
   } catch (err: unknown) {
     const msg =
       err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { status?: number; data?: { error?: string } } }).response?.status === 401
-          ? 'Invalid email or password'
+          ? 'Invalid email or API key'
           : 'Sign in failed. Is the server running?'
         : 'Sign in failed.';
     loginError.value = msg;
@@ -536,12 +546,6 @@ async function handleLogin() {
       cursor: not-allowed;
     }
   }
-}
-
-.login-hint {
-  font-size: 0.8rem;
-  color: $marketplace-text-muted;
-  margin: 12px 0 0 0;
 }
 
 .request-tenancy-prompt {

@@ -104,6 +104,16 @@
     </main>
 
     <AppFooter v-if="showFooter" />
+
+    <router-link
+      v-if="route.path !== '/reservation/check'"
+      to="/reservation/check"
+      class="fab-check-reservation"
+      title="Check on a reservation"
+      aria-label="Check on a reservation"
+    >
+      <i class="pi pi-search"></i>
+    </router-link>
   </div>
 </template>
 
@@ -166,14 +176,16 @@ function onSearchInput(e: Event) {
 const navItems = [
   { path: '/channel', label: 'Channel', icon: 'pi-compass', nav: 'channel' },
   { path: '/tenant', label: 'Marketplace', icon: 'pi-briefcase', nav: 'tenant' },
-  { path: '/admin', label: 'Admin', icon: 'pi-cog', nav: 'admin' },
+  { path: '/reservation/check', label: 'Check reservation', icon: 'pi-search', nav: 'reservation' },
+  { path: '/innkeeper', label: 'Innkeeper', icon: 'pi-cog', nav: 'innkeeper' },
 ];
 
 function isActive(nav: string) {
   if (nav === 'landing') return route.path === '/';
   if (nav === 'channel') return route.path === '/channel' || route.path.startsWith('/scholarships') || route.path.startsWith('/services') || route.path.startsWith('/education') || route.path.startsWith('/job/');
   if (nav === 'tenant') return route.path.startsWith('/tenant');
-  if (nav === 'admin') return route.path.startsWith('/admin');
+  if (nav === 'innkeeper') return route.path.startsWith('/innkeeper');
+  if (nav === 'reservation') return route.path.startsWith('/reservation');
   return false;
 }
 </script>
@@ -423,5 +435,33 @@ function isActive(nav: string) {
   justify-content: center;
   padding: 3rem;
   color: var(--marketplace-text-muted);
+}
+
+/* Floating "Check on a reservation" icon */
+.fab-check-reservation {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $marketplace-primary;
+  color: white;
+  border-radius: 50%;
+  box-shadow: 0 4px 16px rgba(0, 51, 102, 0.35);
+  z-index: 100;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+
+  i {
+    font-size: 1.2rem;
+  }
+
+  &:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 20px rgba(0, 51, 102, 0.45);
+  }
 }
 </style>

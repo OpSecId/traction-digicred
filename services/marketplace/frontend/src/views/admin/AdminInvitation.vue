@@ -106,9 +106,11 @@ async function create() {
       multi_use: form.multi_use,
     });
     result.value = res;
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Create invitation error:', err);
-    alert('Failed to create invitation. Check that MARKETPLACE_TENANCY_URI is configured.');
+    const ax = err && typeof err === 'object' && 'response' in err ? err as { response?: { data?: { error?: string } } } : null;
+    const msg = ax?.response?.data?.error ?? 'Failed to create invitation. Ensure MARKETPLACE_AGENCY_URI is configured and the agency is reachable.';
+    alert(msg);
   } finally {
     creating.value = false;
   }

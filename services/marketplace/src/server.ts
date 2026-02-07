@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -14,10 +14,8 @@ import {
   getActionMenuConfig,
   updateActionMenuConfig,
 } from './controllers/actionMenuController';
-import {
-  issueMarketplaceProfileCredential,
-  buildMarketplaceProfileCredential,
-} from './controllers/credentialIssuanceController';
+import { buildMarketplaceProfileCredential } from './controllers/credentialIssuanceController';
+import { marketplaceIssuer } from './config';
 import { buildJobPostingCredential } from './controllers/jobPostingController';
 import { buildEmployerProfileCredential } from './controllers/employerProfileController';
 import { pluginDb } from './controllers/pluginDbController';
@@ -148,9 +146,35 @@ app.post('/api/auth/employer-login', (req, res) => {
   }
 });
 
-// Admin login (validates against adminLogins in config)
-app.post('/api/auth/admin-login', (req, res) => {
-  console.log('Admin login request received');
+// Tenant login (approved reservations: email + API key)
+app.post('/api/auth/tenant-login', async (req, res) => {
+  try {
+    const { email, apiKey } = req.body as { email?: string; apiKey?: string };
+    if (!email || !apiKey) {
+      res.status(400).json({ error: 'Email and API key are required' });
+      return;
+    }
+    const tenant = await tenantRepo.findByEmailAndApiKey(email.trim(), apiKey.trim());
+    if (!tenant) {
+      res.status(401).json({ error: 'Invalid email or API key' });
+      return;
+    }
+    const cred = tenant.credential as Record<string, unknown> | undefined;
+    const subj = cred?.credentialSubject as Record<string, unknown> | undefined;
+    const name = (subj?.name as string) ?? 'Tenant';
+    res.json({
+      employerId: tenant.id,
+      employerName: name,
+    });
+  } catch (err) {
+    console.error('Tenant login error:', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Innkeeper login (validates against innkeeperLogins or adminLogins in config)
+function handleInnkeeperLogin(req: import('express').Request, res: import('express').Response) {
+  console.log('Innkeeper login request received');
   try {
     const { email, password } = req.body as { email?: string; password?: string };
     if (!email || !password) {
@@ -158,27 +182,30 @@ app.post('/api/auth/admin-login', (req, res) => {
       return;
     }
     const config = loadDemoConfig() as {
+      innkeeperLogins?: Array<{ email: string; password: string }>;
       adminLogins?: Array<{ email: string; password: string }>;
     };
-    const logins = config.adminLogins ?? [];
+    const logins = config.innkeeperLogins ?? config.adminLogins ?? [];
     if (logins.length === 0) {
-      console.warn('Admin login: no adminLogins in config');
+      console.warn('Innkeeper login: no innkeeperLogins in config');
     }
     const match = logins.find(
       (l) => l.email.toLowerCase() === String(email).toLowerCase().trim() && l.password === password
     );
     if (!match) {
-      console.warn('Admin login failed: no match for', email);
+      console.warn('Innkeeper login failed: no match for', email);
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
-    console.log('Admin login success:', email);
+    console.log('Innkeeper login success:', email);
     res.json({ success: true });
   } catch (err) {
-    console.error('Admin login error:', err);
+    console.error('Innkeeper login error:', err);
     res.status(500).json({ error: 'Login failed' });
   }
-});
+}
+app.post('/api/auth/innkeeper-login', handleInnkeeperLogin);
+app.post('/api/auth/admin-login', handleInnkeeperLogin); // backward compatibility
 
 // Serve demo config from YAML or JSON fallback
 app.get('/api/config/demo', (_req, res) => {
@@ -236,12 +263,28 @@ app.get('/api/presentation-request/credentials', (_req, res) => {
   }
 });
 
+// Public: check reservation by ID (ReservationCredential lookup – no auth)
+app.get('/api/reservations/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const reservation = await tenantRequestRepo.getById(id);
+    if (!reservation) {
+      res.status(404).json({ error: 'Reservation not found' });
+      return;
+    }
+    res.json(reservation);
+  } catch (err) {
+    console.error('Error fetching reservation:', err);
+    res.status(500).json({ error: 'Failed to fetch reservation' });
+  }
+});
+
 // Tenant requests - submit for review, list, approve/reject (MongoDB)
 app.post('/api/tenant-requests', async (req, res) => {
   try {
     const body = req.body as TenantRequestInput;
-    if (!body?.tenantType || !body?.name || !body?.email) {
-      res.status(400).json({ error: 'tenantType, name, and email are required' });
+    if (!body?.tenancyType || !body?.name || !body?.email) {
+      res.status(400).json({ error: 'tenancyType, name, and email are required' });
       return;
     }
     const created = await tenantRequestRepo.create(body as unknown as Record<string, unknown>);
@@ -277,50 +320,46 @@ app.patch('/api/tenant-requests/:id', async (req, res) => {
       res.status(404).json({ error: 'Tenant request not found' });
       return;
     }
+    let apiKey: string | undefined;
     if (body.status === 'approved') {
       await workflowRepo.create(id, 'verify-tenant');
       const upd = updated as Record<string, unknown>;
-      // Issue MarketplaceProfileCredential via agent /vc/sign; store on tenant
-      const signedCredential = await issueMarketplaceProfileCredential({
-        id: String(upd.id ?? ''),
-        name: String(upd.name ?? ''),
-        email: String(upd.email ?? ''),
-        tenantType: String(upd.tenantType ?? ''),
-        industry: upd.industry as string | undefined,
-        website: upd.website as string | undefined,
-        businessAddress: upd.businessAddress as string | undefined,
-      });
-      const credentialToStore = signedCredential ?? buildMarketplaceProfileCredential({
-        id: String(upd.id ?? ''),
-        name: String(upd.name ?? ''),
-        email: String(upd.email ?? ''),
-        tenantType: String(upd.tenantType ?? ''),
-        industry: upd.industry as string | undefined,
-        website: upd.website as string | undefined,
-        businessAddress: upd.businessAddress as string | undefined,
+      const cred = upd.credential as Record<string, unknown> | undefined;
+      const subj = cred?.credentialSubject as Record<string, unknown> | undefined;
+      const underName = subj?.underName as Record<string, unknown> | undefined;
+      const reservationFor = subj?.reservationFor as Record<string, unknown> | undefined;
+      const address = underName?.address as Record<string, unknown> | undefined;
+      const credentialToStore = buildMarketplaceProfileCredential({
+        id: String(underName?.id ?? upd.id ?? ''),
+        name: String(underName?.name ?? ''),
+        email: String(underName?.email ?? ''),
+        tenancyType: String(reservationFor?.tenancyType ?? ''),
+        industry: underName?.industry as string | undefined,
+        website: underName?.url as string | undefined,
+        businessAddress: address?.streetAddress as string | undefined,
       });
       // Provision tenant via plugin (creates sub-wallet), then save to MongoDB
       const tenant = await pluginDb.createTenant(id, { credential: credentialToStore });
       if (tenant) {
-        await tenantRepo.saveFromPlugin(tenant);
+        await tenantRepo.saveFromPlugin({ ...tenant, credential: credentialToStore });
+        apiKey = randomBytes(24).toString('base64url');
+        await tenantRepo.setApiKey(String(tenant.id), apiKey);
         // Create employer_profiles for Employer tenants (profile credential created on approval, not first job)
-        if (upd.tenantType === 'Employer') {
+        if (upd.tenancyType === 'Employer') {
           await employerProfileRepo.create(String(tenant.id), credentialToStore);
         }
       }
-      if (signedCredential) {
-        console.log('Issued MarketplaceProfileCredential for', upd.name);
-      }
+      console.log('Stored MarketplaceProfileCredential for', underName?.name ?? upd.name);
     }
-    res.json(updated);
+    res.json({ ...updated, apiKey });
   } catch (err) {
     console.error('Error updating tenant request:', err);
     res.status(500).json({ error: 'Failed to update tenant request' });
   }
 });
 
-// Admin: list tenants (provisioned sub-wallets) - MongoDB
-app.get('/api/admin/tenants', async (_req, res) => {
+// Innkeeper: list tenants (provisioned sub-wallets) - MongoDB
+app.get('/api/innkeeper/tenants', async (_req, res) => {
   try {
     const tenants = await tenantRepo.list();
     res.json({ tenants });
@@ -330,8 +369,8 @@ app.get('/api/admin/tenants', async (_req, res) => {
   }
 });
 
-// Admin: get tenant details (with request info and credential) - MongoDB
-app.get('/api/admin/tenants/:id', async (req, res) => {
+// Innkeeper: get tenant details (with request info and credential) - MongoDB
+app.get('/api/innkeeper/tenants/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const tenant = await tenantRepo.getById(id);
@@ -351,8 +390,8 @@ app.get('/api/admin/tenants/:id', async (req, res) => {
   }
 });
 
-// Admin: revoke tenant access - MongoDB
-app.post('/api/admin/tenants/:id/revoke', async (req, res) => {
+// Innkeeper: revoke tenant access - MongoDB
+app.post('/api/innkeeper/tenants/:id/revoke', async (req, res) => {
   try {
     const { id } = req.params;
     const ok = await tenantRepo.revoke(id);
@@ -367,8 +406,8 @@ app.post('/api/admin/tenants/:id/revoke', async (req, res) => {
   }
 });
 
-// Admin: create tenant (out-of-band onboarding) - MongoDB
-app.post('/api/admin/tenants', async (req, res) => {
+// Innkeeper: create tenant (out-of-band onboarding) - MongoDB
+app.post('/api/innkeeper/tenants', async (req, res) => {
   try {
     const body = req.body as { tenantRequestId?: string; did?: string; walletId?: string };
     const tenant = await tenantRepo.createManual({
@@ -383,8 +422,8 @@ app.post('/api/admin/tenants', async (req, res) => {
   }
 });
 
-// Admin: credential analysis workflow config - MongoDB
-app.get('/api/admin/credential-analysis', async (_req, res) => {
+// Innkeeper: credential analysis workflow config - MongoDB
+app.get('/api/innkeeper/credential-analysis', async (_req, res) => {
   try {
     const config = await credentialAnalysisConfigRepo.get();
     res.json(config);
@@ -394,7 +433,7 @@ app.get('/api/admin/credential-analysis', async (_req, res) => {
   }
 });
 
-app.put('/api/admin/credential-analysis', async (req, res) => {
+app.put('/api/innkeeper/credential-analysis', async (req, res) => {
   try {
     const body = req.body as Partial<CredentialAnalysisConfig>;
     const config = await credentialAnalysisConfigRepo.update(body as Record<string, unknown>);
@@ -405,8 +444,8 @@ app.put('/api/admin/credential-analysis', async (req, res) => {
   }
 });
 
-// Admin: list trust registries (from config)
-app.get('/api/admin/trust-registries', (_req, res) => {
+// Innkeeper: list trust registries (from config)
+app.get('/api/innkeeper/trust-registries', (_req, res) => {
   try {
     const registry = loadTrustRegistry() as { registries?: unknown[] };
     res.json({ trustRegistries: registry.registries ?? [] });
@@ -416,8 +455,8 @@ app.get('/api/admin/trust-registries', (_req, res) => {
   }
 });
 
-// Admin: list workflow instances - MongoDB
-app.get('/api/admin/workflows', async (_req, res) => {
+// Innkeeper: list workflow instances - MongoDB
+app.get('/api/innkeeper/workflows', async (_req, res) => {
   try {
     const workflows = await workflowRepo.list();
     res.json({ workflows });
@@ -427,8 +466,8 @@ app.get('/api/admin/workflows', async (_req, res) => {
   }
 });
 
-// Admin: create workflow instance (e.g. trigger tenant provisioning) - MongoDB
-app.post('/api/admin/workflows', async (req, res) => {
+// Innkeeper: create workflow instance (e.g. trigger tenant provisioning) - MongoDB
+app.post('/api/innkeeper/workflows', async (req, res) => {
   try {
     const { tenantRequestId, workflowType } = req.body as { tenantRequestId?: string; workflowType?: string };
     if (!tenantRequestId || !workflowType) {
@@ -444,19 +483,20 @@ app.post('/api/admin/workflows', async (req, res) => {
 });
 
 // Marketplace plugin: create OOB invitation (proxies to ACA-Py agent)
-app.post('/api/admin/marketplace/invitation', async (req, res) => {
+app.post('/api/innkeeper/marketplace/invitation', async (req, res) => {
   try {
     const body = req.body as Record<string, unknown>;
     const result = await marketplaceController.createInvitation(body);
     res.json(result);
   } catch (err) {
     console.error('Marketplace create invitation error:', err);
-    res.status(500).json({ error: 'Failed to create invitation' });
+    const msg = err instanceof Error ? err.message : 'Failed to create invitation';
+    res.status(500).json({ error: msg });
   }
 });
 
 // Marketplace plugin: analyze transcript (proxies to ACA-Py agent)
-app.post('/api/admin/marketplace/analyze-transcript', async (req, res) => {
+app.post('/api/innkeeper/marketplace/analyze-transcript', async (req, res) => {
   try {
     const { credential_data } = req.body as { credential_data?: Record<string, unknown> };
     if (!credential_data) {
@@ -472,7 +512,7 @@ app.post('/api/admin/marketplace/analyze-transcript', async (req, res) => {
 });
 
 // Action menu config (stored in YAML; sent to holders when plugin implements it)
-app.get('/api/admin/marketplace/action-menu', (_req, res) => {
+app.get('/api/innkeeper/marketplace/action-menu', (_req, res) => {
   try {
     const config = getActionMenuConfig();
     res.json(config);
@@ -482,7 +522,7 @@ app.get('/api/admin/marketplace/action-menu', (_req, res) => {
   }
 });
 
-app.put('/api/admin/marketplace/action-menu', (req, res) => {
+app.put('/api/innkeeper/marketplace/action-menu', (req, res) => {
   try {
     const body = req.body as {
       title?: string;
@@ -681,6 +721,17 @@ app.post('/api/recommendations', async (req, res) => {
   }
 });
 
+// JSON-LD context for marketplace credentials
+app.get('/ns/marketplace/v1', (_req, res) => {
+  const contextPath = path.join(__dirname, '../docs/schemas/marketplace-context.jsonld');
+  if (!fs.existsSync(contextPath)) {
+    res.status(404).json({ error: 'Context file not found' });
+    return;
+  }
+  res.setHeader('Content-Type', 'application/ld+json');
+  res.sendFile(contextPath);
+});
+
 // Serve static frontend in production
 const frontendDist = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(frontendDist)) {
@@ -691,40 +742,6 @@ if (fs.existsSync(frontendDist)) {
 }
 
 async function start() {
-  try {
-    const config = loadDemoConfig() as { tenantRequests?: Array<Record<string, unknown>> };
-    const demoReqs = (config.tenantRequests ?? []).map((r) => ({
-      id: String(r.id ?? ''),
-      tenantType: String(r.tenantType ?? 'Employer'),
-      name: String(r.name ?? ''),
-      email: String(r.email ?? ''),
-      contactName: r.contactName as string | undefined,
-      contactTitle: r.contactTitle as string | undefined,
-      contactPhone: r.contactPhone as string | undefined,
-      registrationId: r.registrationId as string | undefined,
-      jurisdiction: r.jurisdiction as string | undefined,
-      businessAddress: r.businessAddress as string | undefined,
-      website: r.website as string | undefined,
-      industry: r.industry as string | undefined,
-      intendedUse: r.intendedUse as string | undefined,
-      hiringVolume: r.hiringVolume as string | undefined,
-      primaryIndustries: r.primaryIndustries as string | undefined,
-      fundingSource: r.fundingSource as string | undefined,
-      eligibilityOverview: r.eligibilityOverview as string | undefined,
-      accreditation: r.accreditation as string | undefined,
-      credentialTypes: r.credentialTypes as string | undefined,
-      submittedAt: r.submittedAt as string | undefined,
-    }));
-    const toSeed = demoReqs.filter((r) => r.id && r.name && r.email);
-    if (toSeed.length > 0) {
-      const seeded = await tenantRequestRepo.seed(toSeed);
-      console.log('Seeded', seeded, 'demo tenant requests to MongoDB');
-    }
-  } catch (err) {
-    console.error('MongoDB seed failed:', err);
-    // Continue - plugin might not be up yet; frontend can still load
-  }
-
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Marketplace server running at http://0.0.0.0:${PORT}`);
   });

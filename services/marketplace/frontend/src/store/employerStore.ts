@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
-// Simulated employer session - in demo mode, user can "log in" as an employer
+// Simulated employer session - user can log in as an employer
 export const useEmployerStore = defineStore('employer', () => {
   const currentEmployerId = ref<string | null>(null);
 

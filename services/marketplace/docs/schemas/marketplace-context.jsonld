@@ -1,10 +1,70 @@
 {
-  "@context": {
-    "@version": 1.1,
-    "@protected": true,
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://schema.org",
+    {
+      "@version": 1.1,
+      "@protected": true,
 
-    "MarketplaceProfileCredential": "https://marketplace.example.com/vocab#MarketplaceProfileCredential",
-    "JobPostingCredential": "https://marketplace.example.com/vocab#JobPostingCredential",
-    "tenantType": "https://marketplace.example.com/vocab#tenantType"
-  }
+      "MarketplaceProfileCredential": "https://marketplace.example.com/vocab#MarketplaceProfileCredential",
+      "JobPostingCredential": "https://marketplace.example.com/vocab#JobPostingCredential",
+      "ReservationCredential": "https://marketplace.example.com/vocab#ReservationCredential",
+      "MarketplaceTenancy": "https://marketplace.example.com/vocab#MarketplaceTenancy",
+      "tenancyType": "https://marketplace.example.com/vocab#tenancyType",
+
+      "registrationId": "https://marketplace.example.com/vocab#registrationId",
+      "jurisdiction": "https://marketplace.example.com/vocab#jurisdiction",
+      "intendedUse": "https://marketplace.example.com/vocab#intendedUse",
+
+      "validFrom": { "@id": "https://www.w3.org/2018/credentials#validFrom", "@type": "http://www.w3.org/2001/XMLSchema#dateTime" },
+      "validUntil": { "@id": "https://www.w3.org/2018/credentials#validUntil", "@type": "http://www.w3.org/2001/XMLSchema#dateTime" },
+
+      "name": "https://schema.org/name",
+      "email": "https://schema.org/email",
+      "url": "https://schema.org/url",
+      "description": "https://schema.org/description",
+      "industry": "https://schema.org/industry",
+      "address": { "@id": "https://schema.org/address", "@type": "https://schema.org/PostalAddress" },
+      "streetAddress": "https://schema.org/streetAddress",
+
+      "title": "https://schema.org/title",
+      "datePosted": { "@id": "https://schema.org/datePosted", "@type": "http://www.w3.org/2001/XMLSchema#dateTime" },
+      "validThrough": { "@id": "https://schema.org/validThrough", "@type": "http://www.w3.org/2001/XMLSchema#dateTime" },
+      "employmentType": "https://schema.org/employmentType",
+      "hiringOrganization": { "@id": "https://schema.org/hiringOrganization", "@type": "https://schema.org/Organization" },
+      "jobLocation": { "@id": "https://schema.org/jobLocation", "@type": "https://schema.org/Place" },
+      "baseSalary": { "@id": "https://schema.org/baseSalary", "@type": "https://schema.org/MonetaryAmount" },
+      "skills": "https://schema.org/skills",
+      "qualifications": "https://schema.org/qualifications",
+      "benefits": "https://schema.org/benefits",
+
+      "addressLocality": "https://schema.org/addressLocality",
+      "addressRegion": "https://schema.org/addressRegion",
+      "addressCountry": "https://schema.org/addressCountry",
+      "currency": "https://schema.org/currency",
+      "value": { "@id": "https://schema.org/value", "@type": "https://schema.org/QuantitativeValue" },
+      "minValue": "https://schema.org/minValue",
+      "maxValue": "https://schema.org/maxValue",
+      "unitText": "https://schema.org/unitText",
+
+      "Organization": "https://schema.org/Organization",
+      "JobPosting": "https://schema.org/JobPosting",
+      "PostalAddress": "https://schema.org/PostalAddress",
+      "Place": "https://schema.org/Place",
+      "MonetaryAmount": "https://schema.org/MonetaryAmount",
+      "QuantitativeValue": "https://schema.org/QuantitativeValue",
+
+      "Reservation": "https://schema.org/Reservation",
+      "Person": "https://schema.org/Person",
+      "bookingTime": { "@id": "https://schema.org/bookingTime", "@type": "http://www.w3.org/2001/XMLSchema#dateTime" },
+      "modifiedTime": { "@id": "https://schema.org/modifiedTime", "@type": "http://www.w3.org/2001/XMLSchema#dateTime" },
+      "reservationId": "https://schema.org/reservationId",
+      "reservationStatus": "https://schema.org/reservationStatus",
+      "reservationFor": { "@id": "https://schema.org/reservationFor", "@type": "https://schema.org/Thing" },
+      "underName": { "@id": "https://schema.org/underName", "@type": "@id" },
+      "provider": { "@id": "https://schema.org/provider", "@type": "@id" },
+      "broker": { "@id": "https://schema.org/broker", "@type": "@id" },
+      "totalPrice": "https://schema.org/totalPrice"
+    }
+  ]
 }

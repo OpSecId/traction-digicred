@@ -4,7 +4,8 @@
       <nav class="footer-nav">
         <router-link to="/channel">Channel</router-link>
         <router-link to="/tenant/onboard">Request tenancy</router-link>
-        <router-link to="/admin">Admin</router-link>
+        <router-link to="/reservation/check">Check reservation</router-link>
+        <router-link to="/innkeeper">Innkeeper</router-link>
       </nav>
       <p class="footer-copy">© {{ year }} Apply Utopia · DigiCred Marketplace</p>
     </div>

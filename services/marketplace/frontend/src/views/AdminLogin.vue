@@ -2,12 +2,12 @@
   <div class="admin-login">
     <div class="login-hero">
       <i class="pi pi-cog login-icon"></i>
-      <h1>Platform Admin</h1>
+      <h1>Innkeeper</h1>
       <p>Sign in to manage tenant onboarding requests</p>
     </div>
 
     <div class="marketplace-card login-card">
-      <h3 class="login-title">Admin sign in</h3>
+      <h3 class="login-title">Innkeeper sign in</h3>
       <form class="login-form" @submit.prevent="handleLogin" @keydown.enter.prevent="handleLogin">
         <div class="form-field">
           <label for="admin-email">Email</label>
@@ -38,7 +38,6 @@
           {{ loggingIn ? 'Signing in...' : 'Sign in' }}
         </button>
       </form>
-      <p class="login-hint">Demo: admin / 123</p>
       <router-link to="/" class="back-link">
         <i class="pi pi-arrow-left"></i>
         Back to home
@@ -51,7 +50,7 @@
 import { ref, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAdminStore } from '@/store/adminStore';
-import { adminLogin } from '@/api/auth';
+import { innkeeperLogin } from '@/api/auth';
 
 const route = useRoute();
 const router = useRouter();
@@ -63,7 +62,7 @@ const loginError = ref('');
 
 onMounted(() => {
   if (adminStore.isAdmin) {
-    router.replace('/admin');
+    router.replace('/innkeeper');
   }
 });
 
@@ -71,14 +70,14 @@ async function handleLogin() {
   loginError.value = '';
   loggingIn.value = true;
   try {
-    const result = await adminLogin(loginEmail.value.trim(), loginPassword.value);
+    const result = await innkeeperLogin(loginEmail.value.trim(), loginPassword.value);
     if (!result?.success) throw new Error('Login failed');
     adminStore.setLoggedIn(true);
     await nextTick();
-    const redirect = (route.query.redirect as string) || '/admin';
+    const redirect = (route.query.redirect as string) || '/innkeeper';
     await router.replace(redirect);
   } catch (err: unknown) {
-    console.error('[AdminLogin] Error:', err);
+    console.error('[InnkeeperLogin] Error:', err);
     const ax = err && typeof err === 'object' ? (err as { response?: { status?: number; data?: { error?: string } }; message?: string }) : null;
     const status = ax?.response?.status;
     const backendError = ax?.response?.data?.error;
@@ -218,12 +217,6 @@ async function handleLogin() {
   &:hover:not(:disabled) {
     opacity: 0.95;
   }
-}
-
-.login-hint {
-  font-size: 0.8rem;
-  color: $marketplace-text-muted;
-  margin: 16px 0 0 0;
 }
 
 .back-link {

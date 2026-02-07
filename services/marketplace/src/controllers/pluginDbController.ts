@@ -1,10 +1,10 @@
 /**
  * Plugin DB controller - proxies DB operations to the traction_marketplace plugin.
- * Uses MARKETPLACE_TENANCY_URI (plugin runs in tenancy agent).
+ * Uses MARKETPLACE_AGENCY_URI (plugin runs in multitenant agent).
  */
 
 import { agentRequest } from './agentClient';
-import { marketplaceTenancyConfig } from '../config';
+import { marketplaceAgencyConfig } from '../config';
 
 const base = '/marketplace';
 
@@ -17,7 +17,7 @@ async function pluginRequest<T>(
   const url = searchParams
     ? `${path}?${new URLSearchParams(searchParams).toString()}`
     : path;
-  return agentRequest(marketplaceTenancyConfig, url, {
+  return agentRequest(marketplaceAgencyConfig, url, {
     method,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   }) as Promise<T>;

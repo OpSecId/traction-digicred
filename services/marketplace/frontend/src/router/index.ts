@@ -14,6 +14,12 @@ const routes = [
         meta: { title: 'Marketplace', nav: 'landing' },
       },
       {
+        path: 'reservation/check',
+        name: 'CheckReservation',
+        component: () => import('@/views/CheckReservation.vue'),
+        meta: { title: 'Check reservation | Marketplace' },
+      },
+      {
         path: 'channel',
         name: 'Discovery',
         component: () => import('@/views/Discovery.vue'),
@@ -38,67 +44,67 @@ const routes = [
         meta: { title: 'Education', nav: 'channel', marketplaceType: 'education' },
       },
       {
-        path: 'admin',
+        path: 'innkeeper',
         component: () => import('@/views/AdminDashboard.vue'),
-        meta: { title: 'Platform Admin', nav: 'admin', requiresAdmin: true },
-        redirect: '/admin/requests',
+        meta: { title: 'Innkeeper', nav: 'innkeeper', requiresInnkeeper: true },
+        redirect: '/innkeeper/requests',
         children: [
           {
             path: 'requests',
             name: 'AdminRequests',
             component: () => import('@/views/admin/AdminRequests.vue'),
-            meta: { title: 'Requests | Admin' },
+            meta: { title: 'Reservations | Innkeeper' },
           },
           {
             path: 'tenants',
             name: 'AdminTenants',
             component: () => import('@/views/admin/AdminTenants.vue'),
-            meta: { title: 'Tenants | Admin' },
+            meta: { title: 'Tenants | Innkeeper' },
           },
           {
             path: 'trust-registries',
             name: 'AdminTrustRegistries',
             component: () => import('@/views/admin/AdminTrustRegistries.vue'),
-            meta: { title: 'Trust Registry | Admin' },
+            meta: { title: 'Trust Registry | Innkeeper' },
           },
           {
             path: 'credential-analysis',
             name: 'AdminCredentialAnalysis',
             component: () => import('@/views/admin/AdminCredentialAnalysis.vue'),
-            meta: { title: 'Credential Analysis | Admin' },
+            meta: { title: 'Credential Analysis | Innkeeper' },
           },
           {
             path: 'workflows',
             name: 'AdminWorkflows',
             component: () => import('@/views/admin/AdminWorkflows.vue'),
-            meta: { title: 'Workflows | Admin' },
+            meta: { title: 'Workflows | Innkeeper' },
           },
           {
             path: 'marketplace',
             component: () => import('@/views/admin/AdminMarketplace.vue'),
-            redirect: '/admin/marketplace/invitation',
+            redirect: '/innkeeper/marketplace/invitation',
             children: [
               {
                 path: 'invitation',
                 name: 'AdminInvitation',
                 component: () => import('@/views/admin/AdminInvitation.vue'),
-                meta: { title: 'Create invitation | Admin' },
+                meta: { title: 'Create invitation | Innkeeper' },
               },
               {
                 path: 'action-menu',
                 name: 'AdminActionMenu',
                 component: () => import('@/views/admin/AdminActionMenu.vue'),
-                meta: { title: 'Action menu | Admin' },
+                meta: { title: 'Action menu | Innkeeper' },
               },
             ],
           },
         ],
       },
       {
-        path: 'admin/login',
-        name: 'AdminLogin',
+        path: 'innkeeper/login',
+        name: 'InnkeeperLogin',
         component: () => import('@/views/AdminLogin.vue'),
-        meta: { title: 'Admin Sign In' },
+        meta: { title: 'Innkeeper Sign In' },
       },
       {
         path: 'tenant',
@@ -158,10 +164,10 @@ const router = createRouter({
 });
 
 router.beforeEach((to) => {
-  if (to.meta.requiresAdmin && to.path !== '/admin/login') {
+  if (to.meta.requiresInnkeeper && to.path !== '/innkeeper/login') {
     const adminStore = useAdminStore();
     if (!adminStore.isAdmin) {
-      return { path: '/admin/login', query: { redirect: to.fullPath } };
+      return { path: '/innkeeper/login', query: { redirect: to.fullPath } };
     }
   }
 });

@@ -4,18 +4,18 @@
  */
 
 import { agentRequest } from './agentClient';
-import { marketplaceTenancyConfig } from '../config';
+import { marketplaceAgencyConfig } from '../config';
 
 export const tenancyController = {
-  config: marketplaceTenancyConfig,
+  config: marketplaceAgencyConfig,
 
   /** Check if the tenancy agent is configured and reachable */
   async status(): Promise<{ configured: boolean; reachable?: boolean }> {
-    if (!marketplaceTenancyConfig.uri) {
+    if (!marketplaceAgencyConfig.uri) {
       return { configured: false };
     }
     try {
-      await agentRequest(marketplaceTenancyConfig, '/status');
+      await agentRequest(marketplaceAgencyConfig, '/status');
       return { configured: true, reachable: true };
     } catch {
       return { configured: true, reachable: false };
@@ -24,12 +24,12 @@ export const tenancyController = {
 
   /** Get agent status/details (ACA-Py /status endpoint) */
   async getStatus(): Promise<unknown> {
-    return agentRequest(marketplaceTenancyConfig, '/status');
+    return agentRequest(marketplaceAgencyConfig, '/status');
   },
 
   /** Create a tenant / sub-wallet */
   async createTenant(walletName: string, payload?: Record<string, unknown>): Promise<unknown> {
-    return agentRequest(marketplaceTenancyConfig, '/multitenancy/wallet', {
+    return agentRequest(marketplaceAgencyConfig, '/multitenancy/wallet', {
       method: 'POST',
       body: JSON.stringify({ wallet_name: walletName, ...payload }),
     });
@@ -37,6 +37,6 @@ export const tenancyController = {
 
   /** Get tenant wallet by ID */
   async getTenant(walletId: string): Promise<unknown> {
-    return agentRequest(marketplaceTenancyConfig, `/multitenancy/wallet/${walletId}`);
+    return agentRequest(marketplaceAgencyConfig, `/multitenancy/wallet/${walletId}`);
   },
 };

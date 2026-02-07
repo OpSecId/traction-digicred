@@ -8,7 +8,7 @@ import type { TenantRequest } from '@/types/demo';
 const API_TIMEOUT_MS = 15000;
 
 export interface CreateTenantRequestInput {
-  tenantType: string;
+  tenancyType: string;
   name: string;
   email: string;
   contactName?: string;
@@ -44,8 +44,12 @@ export async function listTenantRequests(): Promise<TenantRequest[]> {
   return Array.isArray(res.data?.requests) ? res.data.requests : [];
 }
 
-export async function approveTenantRequest(id: string): Promise<TenantRequest | null> {
-  const res = await axios.patch<TenantRequest>(
+export interface ApproveTenantRequestResponse extends TenantRequest {
+  apiKey?: string;
+}
+
+export async function approveTenantRequest(id: string): Promise<ApproveTenantRequestResponse | null> {
+  const res = await axios.patch<ApproveTenantRequestResponse>(
     `/api/tenant-requests/${id}`,
     { status: 'approved' },
     { timeout: API_TIMEOUT_MS }

@@ -151,10 +151,9 @@ The service worker provides:
 | `DATABASE_URL` | PostgreSQL connection URL (required when DATABASE_TYPE=postgres) |
 | `DATABASE_PATH` | SQLite database file path (default: ./data/marketplace.db) |
 | `CORS_ORIGIN` | Comma-separated allowed origins (empty = allow all, dev only) |
-| `MARKETPLACE_ADMIN_URI` | Marketplace Admin (ACA-Py) base URL, e.g. `http://localhost:8031` |
-| `MARKETPLACE_ADMIN_API_KEY` | API key for Marketplace Admin API authentication |
-| `MARKETPLACE_TENANCY_URI` | Marketplace Tenancy (ACA-Py multitenant) base URL, e.g. `http://localhost:8032`. Used for marketplace plugin (create invitation, analyze transcript). |
-| `MARKETPLACE_TENANCY_API_KEY` | API key for Marketplace Tenancy API authentication |
+| `MARKETPLACE_AGENCY_URI` | Single multitenant ACA-Py agent (Innkeeper + Marketplace plugins) base URL, e.g. `http://localhost:8031` |
+| `MARKETPLACE_AGENCY_API_KEY` | API key for Marketplace Agency API authentication |
+| `MARKETPLACE_INNKEEPER_TOKEN` | Innkeeper tenant Bearer token for tenant-scoped calls (e.g. `/vc/sign`). Get from agent startup logs or `POST /multitenancy/tenant/{tenant_id}/token` |
 
 ## Security Notes
 

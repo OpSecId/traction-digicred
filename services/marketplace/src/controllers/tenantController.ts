@@ -12,7 +12,7 @@ function generateReferenceId(): string {
 }
 
 export interface TenantRequestInput {
-  tenantType: string;
+  tenancyType: string;
   name: string;
   email: string;
   contactName?: string;
@@ -68,7 +68,7 @@ function rowToJson(row: TenantRequestRow) {
   return {
     id: row.id,
     referenceId: row.reference_id ?? undefined,
-    tenantType: row.tenant_type,
+    tenancyType: row.tenant_type,
     name: row.name,
     email: row.email,
     contactName: row.contact_name ?? undefined,
@@ -114,7 +114,7 @@ export async function createTenantRequest(input: TenantRequestInput) {
     [
       id,
       referenceId,
-      input.tenantType,
+      input.tenancyType,
       input.name,
       input.email,
       input.contactName ?? null,
@@ -162,7 +162,7 @@ export async function getTenantRequestById(id: string): Promise<ReturnType<typeo
 export async function seedTenantRequestsIfEmpty(
   demoRequests: Array<{
     id: string;
-    tenantType: string;
+    tenancyType: string;
     name: string;
     email: string;
     contactName?: string;
@@ -203,7 +203,7 @@ export async function seedTenantRequestsIfEmpty(
       [
         id,
         referenceId,
-        r.tenantType,
+        r.tenancyType,
         r.name,
         r.email,
         r.contactName ?? null,

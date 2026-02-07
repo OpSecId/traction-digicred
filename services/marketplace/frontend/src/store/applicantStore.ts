@@ -10,7 +10,7 @@ export interface Applicant {
   appliedAt: string;
 }
 
-// Demo applicants - simulated data for job postings
+// Simulated applicants for job postings (from recommendations)
 export const useApplicantStore = defineStore('applicants', () => {
   const applicants = ref<Applicant[]>([]);
 

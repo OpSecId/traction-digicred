@@ -22,12 +22,12 @@ export interface EmployerPersona {
   jobPostings: JobPosting[];
 }
 
-export type TenantType = 'Employer' | 'Scholarship Admin' | 'Education Institution' | 'Government Service';
+export type TenancyType = 'Employer' | 'Scholarship Admin' | 'Education Institution' | 'Government Service';
 
 export interface TenantRequest {
   id: string;
   referenceId?: string;
-  tenantType: TenantType;
+  tenancyType: TenancyType;
   name: string;
   email: string;
   submittedAt: string;
@@ -53,6 +53,8 @@ export interface TenantRequest {
   // Education Institution-specific
   accreditation?: string;
   credentialTypes?: string;
+  /** Full ReservationCredential (included in API response) */
+  credential?: Record<string, unknown>;
 }
 
 export interface DemoConfig {

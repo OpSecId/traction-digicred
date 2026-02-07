@@ -15,6 +15,7 @@ from acapy_agent.admin.decorators.auth import tenant_authentication
 from acapy_agent.admin.request_context import AdminRequestContext
 from acapy_agent.messaging.models.openapi import OpenAPISchema
 from acapy_agent.protocols.out_of_band.v1_0.manager import OutOfBandManager
+from acapy_agent.protocols.out_of_band.v1_0.messages.invitation import HSProto
 
 from .config import GOAL_CODE, get_config
 from .db_routes import register_db_routes
@@ -132,6 +133,7 @@ async def create_marketplace_invitation(request: web.BaseRequest):
     }
 
     # Create OOB invitation via OutOfBandManager
+    # ACA-Py requires handshake_protocols or request attachments (or both)
     oob_mgr = OutOfBandManager(profile)
     invi_rec = await oob_mgr.create_invitation(
         my_label=config["label"],
@@ -139,6 +141,7 @@ async def create_marketplace_invitation(request: web.BaseRequest):
         goal=goal,
         multi_use=multi_use,
         auto_accept=True,
+        hs_protos=[HSProto.DIDEX_1_1],
     )
 
     # Get invitation as dict from record

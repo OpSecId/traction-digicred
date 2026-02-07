@@ -9,7 +9,7 @@ const router = createRouter({
     { path: '/', component: { template: '<div/>' } },
     { path: '/channel', component: { template: '<div/>' } },
     { path: '/tenant/onboard', component: { template: '<div/>' } },
-    { path: '/admin', component: { template: '<div/>' } },
+    { path: '/innkeeper', component: { template: '<div/>' } },
   ],
 });
 
@@ -23,7 +23,7 @@ describe('AppFooter', () => {
     expect(links).toHaveLength(3);
     expect(links[0].attributes('href')).toBe('/channel');
     expect(links[1].attributes('href')).toBe('/tenant/onboard');
-    expect(links[2].attributes('href')).toBe('/admin');
+    expect(links[2].attributes('href')).toBe('/innkeeper');
   });
 
   it('renders copyright with current year', async () => {

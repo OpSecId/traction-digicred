@@ -16,6 +16,9 @@
             <router-link to="/channel" class="btn-secondary">
               Join channel
             </router-link>
+            <router-link to="/reservation/check" class="btn-tertiary">
+              Check on my reservation
+            </router-link>
           </div>
         </div>
         <div class="hero-visual">
@@ -68,9 +71,14 @@
       <div class="cta-container">
         <h2>Ready to get started?</h2>
         <p>Request tenancy to join the marketplace. Once approved, you can publish offers and connect with credential holders.</p>
-        <router-link to="/tenant/onboard" class="btn-primary btn-large">
-          Request tenancy
-        </router-link>
+        <div class="cta-buttons">
+          <router-link to="/tenant/onboard" class="btn-primary btn-large">
+            Request tenancy
+          </router-link>
+          <router-link to="/reservation/check" class="btn-outline btn-large">
+            Check on my reservation
+          </router-link>
+        </div>
       </div>
     </section>
   </div>
@@ -193,6 +201,26 @@
   &:hover {
     background: rgba(255, 255, 255, 0.25);
     border-color: white;
+  }
+}
+
+.btn-tertiary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 24px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.7);
   }
 }
 
@@ -367,9 +395,36 @@
   }
 }
 
+.cta-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
 .btn-large {
   padding: 16px 36px;
   font-size: 1.05rem;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 36px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: $marketplace-primary;
+  background: transparent;
+  border: 2px solid $marketplace-primary;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    background: $marketplace-primary;
+    color: white;
+  }
 }
 
 </style>

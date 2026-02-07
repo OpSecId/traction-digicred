@@ -128,7 +128,7 @@
               <dt>Email</dt>
               <dd>{{ selectedDetails.tenantRequest.email }}</dd>
               <dt>Type</dt>
-              <dd>{{ selectedDetails.tenantRequest.tenantType || '—' }}</dd>
+              <dd>{{ selectedDetails.tenantRequest.tenancyType || '—' }}</dd>
               <dt>Industry</dt>
               <dd>{{ selectedDetails.tenantRequest.industry || '—' }}</dd>
               <dt>Website</dt>

@@ -4,7 +4,9 @@
  */
 
 import { randomUUID } from 'crypto';
+import { marketplaceContextUri } from '../config';
 import { getDb } from '../db';
+import { toDatetimeString } from '../utils/datetime';
 
 export interface EmployerProfileInput {
   employerId: string;
@@ -19,14 +21,14 @@ export function buildEmployerProfileCredential(
   input: EmployerProfileInput
 ): Record<string, unknown> {
   const now = new Date();
-  const validFrom = now.toISOString();
-  const validUntil = new Date(now.getFullYear(), 11, 31, 23, 59, 59).toISOString();
+  const validFrom = toDatetimeString(now);
+  const validUntil = toDatetimeString(new Date(now.getFullYear(), 11, 31, 23, 59, 59));
 
   const credentialSubject: Record<string, unknown> = {
     id: input.employerId,
     type: 'Organization',
     name: input.employerName,
-    tenantType: 'Employer',
+    tenancyType: 'Employer',
   };
   if (input.employerEmail) credentialSubject.email = input.employerEmail;
   if (input.industry) credentialSubject.industry = input.industry;
@@ -37,7 +39,7 @@ export function buildEmployerProfileCredential(
     : `urn:employer:${input.employerId}`;
 
   return {
-    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://schema.org'],
+    '@context': ['https://www.w3.org/ns/credentials/v2', marketplaceContextUri],
     type: ['VerifiableCredential', 'MarketplaceProfileCredential'],
     id: `urn:uuid:${randomUUID()}`,
     issuer: issuerPlaceholder,

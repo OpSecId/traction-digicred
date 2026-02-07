@@ -4,10 +4,11 @@
  */
 
 import { randomUUID } from 'crypto';
+import { buildReservationCredentialFromTenantRequest } from '../controllers/credentialIssuanceController';
 import { getMongoDb } from '../db/mongodb';
 
 const COLL = {
-  tenant_requests: 'tenant_requests',
+  reservations: 'reservations',
   tenants: 'tenants',
   workflow_instances: 'workflow_instances',
   employer_profiles: 'employer_profiles',
@@ -23,60 +24,109 @@ function now(): string {
   return new Date().toISOString();
 }
 
-// Tenant requests
+/** Remove keys with null or undefined values from an object (shallow). */
+function stripNulls<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v != null) out[k] = v;
+  }
+  return out as Partial<T>;
+}
+
+/** Hydrate API response from stored doc (credential + workflow). Derive fields from credential. */
+function hydrateFromDoc(doc: Record<string, unknown>): Record<string, unknown> {
+  const cred = doc.credential as Record<string, unknown> | undefined;
+  if (!cred?.credentialSubject) return doc;
+  const subj = cred.credentialSubject as Record<string, unknown>;
+  const underName = subj.underName as Record<string, unknown> | undefined;
+  const reservationFor = subj.reservationFor as Record<string, unknown> | undefined;
+  const contactPoint = underName?.contactPoint as Record<string, unknown> | undefined;
+  return {
+    id: cred.id,
+    referenceId: subj.reservationId,
+    tenancyType: reservationFor?.tenancyType,
+    name: underName?.name,
+    email: underName?.email,
+    contactName: contactPoint?.name,
+    contactTitle: contactPoint?.jobTitle,
+    contactPhone: contactPoint?.telephone,
+    registrationId: underName?.registrationId,
+    jurisdiction: underName?.jurisdiction,
+    businessAddress: (underName?.address as Record<string, unknown>)?.streetAddress,
+    website: underName?.url,
+    industry: underName?.industry,
+    intendedUse: underName?.intendedUse,
+    status: doc.status,
+    submittedAt: doc.submittedAt,
+    reviewedAt: doc.reviewedAt,
+    reviewedBy: doc.reviewedBy,
+    rejectionReason: doc.rejectionReason,
+    notes: doc.notes,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+    credential: cred,
+  };
+}
+
+/** Find doc by credential id (credential.id, reservationId, or underName.id). */
+function reservationIdQuery(id: string): Record<string, unknown> {
+  return {
+    $or: [
+      { 'credential.id': id },
+      { 'credential.credentialSubject.reservationId': id },
+      { 'credential.credentialSubject.underName.id': id },
+    ],
+  };
+}
+
+// Tenant requests – store credential as source of truth, no duplicate fields, no nulls
 export const tenantRequestRepo = {
   async create(input: Record<string, unknown>): Promise<Record<string, unknown>> {
     const db = await getMongoDb();
-    const col = db.collection(COLL.tenant_requests);
+    const col = db.collection(COLL.reservations);
     const id = `urn:uuid:${randomUUID()}`;
+    const referenceId = refId();
     const submittedAt = now();
-    const doc = {
+    const credential = buildReservationCredentialFromTenantRequest({
       id,
-      referenceId: refId(),
-      tenantType: input.tenantType,
-      name: input.name,
-      email: input.email,
-      contactName: input.contactName ?? null,
-      contactTitle: input.contactTitle ?? null,
-      contactPhone: input.contactPhone ?? null,
-      companyName: input.companyName ?? input.name ?? null,
-      registrationId: input.registrationId ?? null,
-      jurisdiction: input.jurisdiction ?? null,
-      businessAddress: input.businessAddress ?? null,
-      website: input.website ?? null,
-      industry: input.industry ?? null,
-      intendedUse: input.intendedUse ?? null,
-      hiringVolume: input.hiringVolume ?? null,
-      primaryIndustries: input.primaryIndustries ?? null,
-      fundingSource: input.fundingSource ?? null,
-      eligibilityOverview: input.eligibilityOverview ?? null,
-      accreditation: input.accreditation ?? null,
-      credentialTypes: input.credentialTypes ?? null,
+      referenceId,
+      tenancyType: String(input.tenancyType ?? 'Employer'),
+      name: String(input.name ?? ''),
+      email: String(input.email ?? ''),
+      contactName: input.contactName != null ? String(input.contactName) : undefined,
+      contactTitle: input.contactTitle != null ? String(input.contactTitle) : undefined,
+      contactPhone: input.contactPhone != null ? String(input.contactPhone) : undefined,
+      registrationId: input.registrationId != null ? String(input.registrationId) : undefined,
+      jurisdiction: input.jurisdiction != null ? String(input.jurisdiction) : undefined,
+      businessAddress: input.businessAddress != null ? String(input.businessAddress) : undefined,
+      website: input.website != null ? String(input.website) : undefined,
+      industry: input.industry != null ? String(input.industry) : undefined,
+      intendedUse: input.intendedUse != null ? String(input.intendedUse) : undefined,
+    });
+    const doc = stripNulls({
+      credential,
       status: 'pending',
       submittedAt,
-      reviewedAt: null,
-      reviewedBy: null,
-      rejectionReason: null,
-      notes: null,
       createdAt: now(),
       updatedAt: now(),
-    };
+    });
     await col.insertOne(doc);
-    return doc;
+    return hydrateFromDoc({ ...doc, credential });
   },
 
   async list(): Promise<unknown[]> {
     const db = await getMongoDb();
-    const col = db.collection(COLL.tenant_requests);
+    const col = db.collection(COLL.reservations);
     const cursor = col.find({}).sort({ submittedAt: -1 });
-    return cursor.toArray();
+    const docs = await cursor.toArray();
+    return docs.map((d) => hydrateFromDoc(d as Record<string, unknown>));
   },
 
   async getById(id: string): Promise<Record<string, unknown> | null> {
     const db = await getMongoDb();
-    const col = db.collection(COLL.tenant_requests);
-    const doc = await col.findOne({ id });
-    return doc as Record<string, unknown> | null;
+    const col = db.collection(COLL.reservations);
+    const doc = await col.findOne(reservationIdQuery(id));
+    return doc ? hydrateFromDoc(doc as Record<string, unknown>) : null;
   },
 
   async updateStatus(
@@ -85,62 +135,61 @@ export const tenantRequestRepo = {
     options?: { rejectionReason?: string; reviewedBy?: string }
   ): Promise<Record<string, unknown> | null> {
     const db = await getMongoDb();
-    const col = db.collection(COLL.tenant_requests);
-    const reviewedAt = now();
-    const update: Record<string, unknown> = {
+    const col = db.collection(COLL.reservations);
+    const existing = await col.findOne(reservationIdQuery(id)) as Record<string, unknown> | null;
+    if (!existing) return null;
+    const update = stripNulls({
       status,
-      reviewedAt,
-      reviewedBy: options?.reviewedBy ?? null,
+      reviewedAt: now(),
+      ...(options?.reviewedBy && { reviewedBy: options.reviewedBy }),
+      ...(status === 'rejected' && options?.rejectionReason && { rejectionReason: options.rejectionReason }),
       updatedAt: now(),
-    };
-    if (status === 'rejected' && options?.rejectionReason) {
-      update.rejectionReason = options.rejectionReason;
-    }
-    const result = await col.findOneAndUpdate({ id }, { $set: update }, { returnDocument: 'after' });
-    return result as Record<string, unknown> | null;
+    });
+    const result = await col.findOneAndUpdate(
+      reservationIdQuery(id),
+      { $set: update },
+      { returnDocument: 'after' }
+    );
+    return result ? hydrateFromDoc(result as Record<string, unknown>) : null;
   },
 
   async seed(requests: Array<Record<string, unknown>>): Promise<number> {
     const db = await getMongoDb();
-    const col = db.collection(COLL.tenant_requests);
+    const col = db.collection(COLL.reservations);
     let seeded = 0;
     for (const r of requests) {
-      const id = String(r.id ?? '');
-      if (!id || !r.name || !r.email) continue;
-      const existing = await col.findOne({ id });
-      if (existing) continue;
+      const name = r.name != null ? String(r.name) : '';
+      const email = r.email != null ? String(r.email) : '';
+      if (!name || !email) continue;
+      const id = `urn:uuid:${randomUUID()}`;
+      const referenceId = refId();
       const submittedAt = (r.submittedAt as string) ?? now();
-      await col.insertOne({
+      const credential = buildReservationCredentialFromTenantRequest({
         id,
-        referenceId: refId(),
-        tenantType: r.tenantType ?? 'Employer',
-        name: r.name,
-        email: r.email,
-        contactName: r.contactName ?? null,
-        contactTitle: r.contactTitle ?? null,
-        contactPhone: r.contactPhone ?? null,
-        companyName: r.companyName ?? r.name ?? null,
-        registrationId: r.registrationId ?? null,
-        jurisdiction: r.jurisdiction ?? null,
-        businessAddress: r.businessAddress ?? null,
-        website: r.website ?? null,
-        industry: r.industry ?? null,
-        intendedUse: r.intendedUse ?? null,
-        hiringVolume: r.hiringVolume ?? null,
-        primaryIndustries: r.primaryIndustries ?? null,
-        fundingSource: r.fundingSource ?? null,
-        eligibilityOverview: r.eligibilityOverview ?? null,
-        accreditation: r.accreditation ?? null,
-        credentialTypes: r.credentialTypes ?? null,
+        referenceId,
+        tenancyType: String(r.tenancyType ?? 'Employer'),
+        name,
+        email,
+        contactName: r.contactName != null ? String(r.contactName) : undefined,
+        contactTitle: r.contactTitle != null ? String(r.contactTitle) : undefined,
+        contactPhone: r.contactPhone != null ? String(r.contactPhone) : undefined,
+        registrationId: r.registrationId != null ? String(r.registrationId) : undefined,
+        jurisdiction: r.jurisdiction != null ? String(r.jurisdiction) : undefined,
+        businessAddress: r.businessAddress != null ? String(r.businessAddress) : undefined,
+        website: r.website != null ? String(r.website) : undefined,
+        industry: r.industry != null ? String(r.industry) : undefined,
+        intendedUse: r.intendedUse != null ? String(r.intendedUse) : undefined,
+      });
+      const doc = stripNulls({
+        credential,
         status: 'pending',
         submittedAt,
-        reviewedAt: null,
-        reviewedBy: null,
-        rejectionReason: null,
-        notes: null,
         createdAt: now(),
         updatedAt: now(),
       });
+      const credId = (credential as Record<string, unknown>).id as string;
+      if (await col.findOne(reservationIdQuery(credId))) continue;
+      await col.insertOne(doc);
       seeded++;
     }
     return seeded;
@@ -210,6 +259,30 @@ export const tenantRepo = {
     const col = db.collection(COLL.tenants);
     const result = await col.updateOne({ id }, { $set: { status: 'revoked', updatedAt: now() } });
     return result.modifiedCount > 0;
+  },
+
+  async setApiKey(tenantId: string, apiKey: string): Promise<void> {
+    const db = await getMongoDb();
+    const col = db.collection(COLL.tenants);
+    await col.updateOne(
+      { id: tenantId },
+      { $set: { apiKey, updatedAt: now() } }
+    );
+  },
+
+  async findByEmailAndApiKey(email: string, apiKey: string): Promise<Record<string, unknown> | null> {
+    const db = await getMongoDb();
+    const col = db.collection(COLL.tenants);
+    const normalized = String(email).toLowerCase().trim();
+    const docs = await col
+      .find({
+        'credential.credentialSubject.email': { $regex: new RegExp(`^${normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+        apiKey,
+        status: { $ne: 'revoked' },
+      })
+      .limit(1)
+      .toArray();
+    return docs.length ? (docs[0] as Record<string, unknown>) : null;
   },
 
   /** Save tenant from plugin provisioning response (handles snake_case or camelCase) */

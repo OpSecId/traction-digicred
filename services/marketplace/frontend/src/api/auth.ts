@@ -23,9 +23,21 @@ export async function employerLogin(
   return res.data;
 }
 
-export async function adminLogin(email: string, password: string): Promise<{ success: boolean }> {
+export async function tenantLogin(
+  email: string,
+  apiKey: string
+): Promise<EmployerLoginResponse> {
+  const res = await axios.post<EmployerLoginResponse>(
+    '/api/auth/tenant-login',
+    { email, apiKey },
+    { timeout: AUTH_TIMEOUT_MS }
+  );
+  return res.data;
+}
+
+export async function innkeeperLogin(email: string, password: string): Promise<{ success: boolean }> {
   const res = await axios.post<{ success: boolean }>(
-    '/api/auth/admin-login',
+    '/api/auth/innkeeper-login',
     { email, password },
     { timeout: AUTH_TIMEOUT_MS }
   );

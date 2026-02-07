@@ -2,7 +2,7 @@
   <div class="admin-dashboard">
     <header class="admin-header">
       <div class="admin-header-inner">
-        <h1 class="admin-title">Platform Admin</h1>
+        <h1 class="admin-title">Innkeeper</h1>
         <nav class="admin-tabs">
           <router-link
             v-for="item in mainTabs"
@@ -62,20 +62,20 @@ const adminStore = useAdminStore();
 const tenantStore = useTenantRequestStore();
 
 const mainTabs = computed(() => [
-  { path: '/admin/requests', label: 'Requests', icon: 'pi-inbox', count: tenantStore.pendingRequests.length },
-  { path: '/admin/tenants', label: 'Tenants', icon: 'pi-users' },
-  { path: '/admin/trust-registries', label: 'Trust registry', icon: 'pi-shield' },
-  { path: '/admin/credential-analysis', label: 'Credential analysis', icon: 'pi-file-edit' },
-  { path: '/admin/workflows', label: 'Workflows', icon: 'pi-sitemap' },
-  { path: '/admin/marketplace', label: 'Marketplace', icon: 'pi-store' },
+  { path: '/innkeeper/requests', label: 'Reservations', icon: 'pi-inbox', count: tenantStore.pendingRequests.length },
+  { path: '/innkeeper/tenants', label: 'Tenants', icon: 'pi-users' },
+  { path: '/innkeeper/trust-registries', label: 'Trust registry', icon: 'pi-shield' },
+  { path: '/innkeeper/credential-analysis', label: 'Credential analysis', icon: 'pi-file-edit' },
+  { path: '/innkeeper/workflows', label: 'Workflows', icon: 'pi-sitemap' },
+  { path: '/innkeeper/marketplace', label: 'Marketplace', icon: 'pi-store' },
 ]);
 
 const marketplaceTabs = [
-  { path: '/admin/marketplace/invitation', label: 'Invitation', icon: 'pi-qrcode' },
-  { path: '/admin/marketplace/action-menu', label: 'Action menu', icon: 'pi-list' },
+  { path: '/innkeeper/marketplace/invitation', label: 'Invitation', icon: 'pi-qrcode' },
+  { path: '/innkeeper/marketplace/action-menu', label: 'Action menu', icon: 'pi-list' },
 ];
 
-const showMarketplaceTabs = computed(() => route.path.startsWith('/admin/marketplace'));
+const showMarketplaceTabs = computed(() => route.path.startsWith('/innkeeper/marketplace'));
 
 function isActive(path: string) {
   return route.path === path || route.path.startsWith(path + '/');
@@ -83,7 +83,7 @@ function isActive(path: string) {
 
 function handleSignOut() {
   adminStore.clearAdmin();
-  router.replace('/admin/login');
+  router.replace('/innkeeper/login');
 }
 </script>
 

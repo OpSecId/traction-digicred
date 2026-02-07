@@ -1,10 +1,10 @@
 /**
  * Marketplace plugin controller - proxies to ACA-Py multitenant agent.
- * Create invitation, analyze transcript. Uses MARKETPLACE_TENANCY_URI + API key.
+ * Create invitation, analyze transcript. Uses MARKETPLACE_AGENCY_URI + API key.
  */
 
 import { agentRequest } from './agentClient';
-import { marketplaceTenancyConfig } from '../config';
+import { marketplaceAgencyConfig } from '../config';
 
 export interface MarketplaceInvitationRequest {
   content_url?: string;
@@ -32,17 +32,17 @@ export interface TranscriptAnalysisResponse {
 }
 
 export const marketplaceController = {
-  config: marketplaceTenancyConfig,
+  config: marketplaceAgencyConfig,
 
   async createInvitation(body?: MarketplaceInvitationRequest): Promise<MarketplaceInvitationResponse> {
-    return agentRequest(marketplaceTenancyConfig, '/marketplace/invitation', {
+    return agentRequest(marketplaceAgencyConfig, '/marketplace/invitation', {
       method: 'POST',
       body: JSON.stringify(body ?? {}),
     });
   },
 
   async analyzeTranscript(body: TranscriptAnalysisRequest): Promise<TranscriptAnalysisResponse> {
-    return agentRequest(marketplaceTenancyConfig, '/marketplace/analyze-transcript', {
+    return agentRequest(marketplaceAgencyConfig, '/marketplace/analyze-transcript', {
       method: 'POST',
       body: JSON.stringify(body),
     });

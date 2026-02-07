@@ -329,7 +329,7 @@ INSERT INTO tenant_requests (
 ```json
 {
   "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174020",
-  "tenantType": "Employer",
+  "tenancyType": "Employer",
   "name": "TechCorp Industries",
   "email": "hr@techcorp.example.com",
   "companyName": "TechCorp Industries",
@@ -446,7 +446,7 @@ INSERT INTO tenant_profiles (
   "websiteUrl": "https://www.denverhealth.org",
   "contactEmail": "careers@denverhealth.org",
   "industry": "Healthcare",
-  "tenantType": "Employer",
+  "tenancyType": "Employer",
   "locationCity": "Denver",
   "locationCountry": "US",
   "primaryColor": "#0066cc",

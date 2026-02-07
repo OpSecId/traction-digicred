@@ -6,6 +6,8 @@
 export interface AgentConfig {
   uri: string;
   apiKey: string;
+  /** Optional Bearer token for tenant-scoped requests (e.g. /vc/sign). */
+  bearerToken?: string;
 }
 
 export async function agentRequest<T = unknown>(
@@ -13,7 +15,7 @@ export async function agentRequest<T = unknown>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const { uri, apiKey } = config;
+  const { uri, apiKey, bearerToken } = config;
   if (!uri) {
     throw new Error('Agent URI not configured');
   }
@@ -25,6 +27,9 @@ export async function agentRequest<T = unknown>(
   };
   if (apiKey) {
     headers['X-API-Key'] = apiKey;
+  }
+  if (bearerToken) {
+    headers['Authorization'] = `Bearer ${bearerToken}`;
   }
 
   const res = await fetch(url, {

@@ -4,7 +4,9 @@
  */
 
 import { randomUUID } from 'crypto';
+import { marketplaceContextUri } from '../config';
 import { getDb } from '../db';
+import { toDatetimeString } from '../utils/datetime';
 import { ensureEmployerProfile } from './employerProfileController';
 
 export interface JobPostingInput {
@@ -62,15 +64,15 @@ export function buildJobPostingCredential(
   input: JobPostingInput
 ): Record<string, unknown> {
   const now = new Date();
-  const validFrom = now.toISOString();
-  const validUntil = input.validThrough ?? new Date(now.getFullYear(), 11, 31, 23, 59, 59).toISOString();
+  const validFrom = toDatetimeString(now);
+  const validUntil = input.validThrough ?? toDatetimeString(new Date(now.getFullYear(), 11, 31, 23, 59, 59));
 
   const credentialSubject: Record<string, unknown> = {
     id: jobId,
     type: 'JobPosting',
     title: input.title,
     description: input.description,
-    datePosted: now.toISOString(),
+    datePosted: toDatetimeString(now),
     validThrough: validUntil,
     hiringOrganization: {
       type: 'Organization',
@@ -113,7 +115,7 @@ export function buildJobPostingCredential(
   const issuerPlaceholder = input.employerId.startsWith('urn:') ? input.employerId : `urn:employer:${input.employerId}`;
 
   return {
-    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://schema.org'],
+    '@context': ['https://www.w3.org/ns/credentials/v2', marketplaceContextUri],
     type: ['VerifiableCredential', 'JobPostingCredential'],
     id: jobId,
     issuer: issuerPlaceholder,

@@ -2,9 +2,9 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useDemoStore } from './demoStore';
 import * as tenantApi from '@/api/tenantRequests';
-import type { TenantRequest, TenantType } from '@/types/demo';
+import type { TenantRequest, TenancyType } from '@/types/demo';
 
-export type { TenantType };
+export type { TenancyType };
 
 export const useTenantRequestStore = defineStore('tenantRequest', () => {
   const demoStore = useDemoStore();
@@ -57,7 +57,7 @@ export const useTenantRequestStore = defineStore('tenantRequest', () => {
   async function addRequest(data: Omit<TenantRequest, 'id'>): Promise<{ success: boolean; referenceId?: string; error?: string }> {
     try {
       const created = await tenantApi.createTenantRequest({
-        tenantType: data.tenantType,
+        tenancyType: data.tenancyType,
         name: data.name,
         email: data.email,
         contactName: data.contactName,
@@ -94,11 +94,15 @@ export const useTenantRequestStore = defineStore('tenantRequest', () => {
     }
   }
 
-  async function approve(id: string) {
+  async function approve(id: string): Promise<{ apiKey?: string; email?: string } | void> {
     try {
       const updated = await tenantApi.approveTenantRequest(id);
       if (updated) {
         apiRequests.value = apiRequests.value.map((r) => (r.id === id ? updated : r));
+        return {
+          apiKey: (updated as { apiKey?: string }).apiKey,
+          email: updated.email,
+        };
       }
     } catch {
       statusOverrides.value[id] = 'approved';

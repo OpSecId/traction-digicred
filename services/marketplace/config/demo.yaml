@@ -380,7 +380,11 @@ personas:
           - Valid driver's license
           - Physical ability for outdoor work
 
-# Platform admin login credentials
+# Innkeeper login credentials (admin view)
+innkeeperLogins:
+  - email: admin
+    password: "123"
+# Legacy alias - innkeeperLogins preferred
 adminLogins:
   - email: admin
     password: "123"
@@ -403,7 +407,7 @@ employerLogins:
 # Tenant onboarding requests (Platform Admin) - includes KYC fields
 tenantRequests:
   - id: req-1
-    tenantType: Employer
+    tenancyType: Employer
     name: TechCorp Industries
     email: hr@techcorp.example.com
     submittedAt: "2025-01-28T10:00:00Z"
@@ -420,7 +424,7 @@ tenantRequests:
     hiringVolume: "51-200"
     primaryIndustries: Healthcare, Technology
   - id: req-2
-    tenantType: Scholarship Admin
+    tenancyType: Scholarship Admin
     name: State Education Foundation
     email: admin@stateedu.org
     submittedAt: "2025-01-27T14:30:00Z"
@@ -433,7 +437,7 @@ tenantRequests:
     industry: Education
     intendedUse: Manage scholarship applications; verify student credentials
   - id: req-3
-    tenantType: Education Institution
+    tenancyType: Education Institution
     name: Metro Community College
     email: registrar@metrocc.edu
     submittedAt: "2025-01-26T09:15:00Z"

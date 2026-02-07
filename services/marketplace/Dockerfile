@@ -30,8 +30,9 @@ RUN npm ci --omit=dev --ignore-scripts
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/frontend/dist ./frontend/dist
 
-# Copy config (used at runtime)
+# Copy config and docs (used at runtime)
 COPY config ./config
+COPY docs ./docs
 
 # Expose marketplace server port
 EXPOSE 5174

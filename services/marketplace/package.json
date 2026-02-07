@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Apply Utopia Marketplace PWA - Job discovery and employer onboarding",
   "scripts": {
-    "postinstall": "node scripts/embed-demo.js || true",
+    "postinstall": "node scripts/embed-demo.js || true && cd frontend && npm install",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:frontend\"",
     "dev:server": "ts-node src/server.ts",
     "dev:frontend": "cd frontend && npm run dev",

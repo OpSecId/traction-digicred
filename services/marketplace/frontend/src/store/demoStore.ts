@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import axios from 'axios';
 import type { DemoConfig, JobWithEmployer, TenantRequest } from '@/types/demo';
-import embeddedDemo from '@/data/embeddedDemo.json';
 
 export const useDemoStore = defineStore('demo', () => {
   const config = ref<DemoConfig | null>(null);
@@ -68,8 +67,6 @@ export const useDemoStore = defineStore('demo', () => {
   async function load() {
     loading.value = true;
     error.value = null;
-    // Bundled data ensures app works when API/demo.json return 502
-    const bundled = normalizeConfig(embeddedDemo);
     try {
       try {
         const res = await axios.get('/api/config/demo');
@@ -84,10 +81,10 @@ export const useDemoStore = defineStore('demo', () => {
           config.value = await tryFallback();
           return config.value;
         } catch {
-          // /demo.json also failed (502, etc.)
+          // API and /demo.json both failed
         }
       }
-      config.value = bundled;
+      config.value = normalizeConfig({ personas: [] });
       return config.value;
     } finally {
       loading.value = false;

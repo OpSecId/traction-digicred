@@ -12,8 +12,8 @@ RUN cd frontend && npm ci
 # Copy source and config
 COPY . .
 
-# Embed demo config and build frontend
-RUN node scripts/embed-demo.js && cd frontend && npm run build
+# Build frontend
+RUN cd frontend && npm run build
 
 # Compile backend
 RUN npx tsc
@@ -22,9 +22,9 @@ RUN npx tsc
 FROM node:22-alpine
 WORKDIR /usr/src/app
 
-# Copy package files and install production deps only
+# Copy package files and install production deps only (ignore-scripts: no scripts/ or frontend/ yet)
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --ignore-scripts
 
 # Copy built backend and frontend from builder
 COPY --from=builder /usr/src/app/dist ./dist

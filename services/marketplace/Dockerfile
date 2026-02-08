@@ -39,7 +39,7 @@ EXPOSE 5174
 
 # Health check - verify server responds
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget -q -O - http://localhost:5174/api/config/demo > /dev/null || exit 1
+  CMD wget -q -O - http://localhost:5174/api/agents/admin/status > /dev/null || exit 1
 
 # Run the Express server (serves API + static frontend from frontend/dist)
 CMD ["node", "dist/server.js"]

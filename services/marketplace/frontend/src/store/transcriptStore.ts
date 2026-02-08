@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import axios from 'axios';
-import type { JobWithEmployer } from '@/types/demo';
+import type { JobWithEmployer } from '@/api/jobs';
 import type { DemoCredential, TranscriptCourse } from '@/types/credentials';
 
 const STORAGE_KEY = 'marketplace-transcript-shared';

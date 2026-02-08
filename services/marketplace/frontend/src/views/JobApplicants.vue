@@ -1,8 +1,8 @@
 <template>
   <div class="applicants-page">
-    <router-link :to="{ name: 'JobDetail', params: { jobId } }" class="back-link">
+    <router-link to="/tenant/jobs" class="back-link">
       <i class="pi pi-arrow-left"></i>
-      Back to Job
+      Back to Job Postings
     </router-link>
 
     <div v-if="job" class="applicants-content">
@@ -53,22 +53,19 @@
 import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import StatusMessage from '@/components/StatusMessage.vue';
-import { useDemoStore } from '@/store/demoStore';
 import { useEmployerJobStore } from '@/store/employerJobStore';
 import { useApplicantStore } from '@/store/applicantStore';
 
 const route = useRoute();
-const demoStore = useDemoStore();
 const employerJobStore = useEmployerJobStore();
 const applicantStore = useApplicantStore();
 
 const jobId = route.params.jobId as string;
-const fetchedJob = ref<{ id: string; title: string } | null>(null);
 
 const job = computed(() => {
-  const apiJob = employerJobStore.getJobById(jobId) ?? fetchedJob.value;
+  const apiJob = employerJobStore.getJobById(jobId);
   if (apiJob) return { id: apiJob.id, name: apiJob.title };
-  return demoStore.allJobs.find((j) => j.id === jobId);
+  return null;
 });
 
 watch(
@@ -76,9 +73,7 @@ watch(
   async (param) => {
     const id = Array.isArray(param) ? param[0] : param;
     if (!id) return;
-    if (employerJobStore.getJobById(id) || demoStore.allJobs.find((j) => j.id === id)) return;
-    const j = await employerJobStore.getOrFetchJob(id);
-    fetchedJob.value = j ? { id: j.id, title: j.title } : null;
+    await employerJobStore.getOrFetchJob(id);
   },
   { immediate: true }
 );

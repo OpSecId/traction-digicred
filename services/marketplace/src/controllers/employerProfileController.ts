@@ -1,11 +1,9 @@
 /**
- * Employer profile controller - MarketplaceProfileCredential for employers.
- * Creates profile credential (no proof) when employer first creates a job.
+ * Build MarketplaceProfileCredential (unsigned) for employers.
  */
 
 import { randomUUID } from 'crypto';
-import { marketplaceContextUri } from '../config';
-import { getDb } from '../db';
+import { marketplaceContextUri, marketplaceIssuer } from '../config';
 import { toDatetimeString } from '../utils/datetime';
 
 export interface EmployerProfileInput {
@@ -14,6 +12,8 @@ export interface EmployerProfileInput {
   employerEmail?: string;
   industry?: string;
   website?: string;
+  /** Override for credentialSubject.id (e.g. did:web for tenant). When not set, uses employerId. */
+  subjectId?: string;
 }
 
 /** Build MarketplaceProfileCredential (without proof) for an employer */
@@ -25,7 +25,7 @@ export function buildEmployerProfileCredential(
   const validUntil = toDatetimeString(new Date(now.getFullYear(), 11, 31, 23, 59, 59));
 
   const credentialSubject: Record<string, unknown> = {
-    id: input.employerId,
+    id: input.subjectId ?? input.employerId,
     type: 'Organization',
     name: input.employerName,
     tenancyType: 'Employer',
@@ -33,73 +33,25 @@ export function buildEmployerProfileCredential(
   if (input.industry) credentialSubject.industry = input.industry;
   if (input.website) credentialSubject.url = input.website;
   if (input.employerEmail) {
-    credentialSubject.contactPoint = {
-      type: 'ContactPoint',
-      email: input.employerEmail,
-    };
+    credentialSubject.contactPoint = { type: 'ContactPoint', email: input.employerEmail };
   }
 
-  const issuerPlaceholder = input.employerId.startsWith('urn:')
-    ? input.employerId
-    : `urn:employer:${input.employerId}`;
+  const issuerObj: Record<string, unknown> = {
+    id: marketplaceIssuer.id,
+    name: marketplaceIssuer.name,
+    ...(marketplaceIssuer.image && { image: marketplaceIssuer.image }),
+    ...(marketplaceIssuer.description && { description: marketplaceIssuer.description }),
+  };
 
   return {
     '@context': ['https://www.w3.org/ns/credentials/v2', marketplaceContextUri],
     type: ['VerifiableCredential', 'MarketplaceProfileCredential'],
     id: `urn:uuid:${randomUUID()}`,
-    issuer: issuerPlaceholder,
+    issuer: issuerObj,
     validFrom,
     validUntil,
     name: 'Apply Utopia Marketplace Profile',
     description: `Verifies that ${input.employerName} is an approved employer on the Apply Utopia marketplace.`,
     credentialSubject,
   };
-}
-
-export async function getEmployerProfile(employerId: string): Promise<{
-  employerId: string;
-  credential: Record<string, unknown>;
-} | null> {
-  const db = await getDb();
-  const { rows } = await db.query<{ employer_id: string; credential: string }>(
-    'SELECT employer_id, credential FROM employer_profiles WHERE employer_id = ?',
-    [employerId]
-  );
-  if (rows.length === 0) return null;
-  return {
-    employerId: rows[0].employer_id,
-    credential: JSON.parse(rows[0].credential) as Record<string, unknown>,
-  };
-}
-
-/** Create employer profile credential (used when admin approves Employer tenant). */
-export async function createEmployerProfile(
-  employerId: string,
-  credential: Record<string, unknown>
-): Promise<void> {
-  const db = await getDb();
-  const now = new Date().toISOString();
-  await db.run(
-    `INSERT OR REPLACE INTO employer_profiles (employer_id, credential, created_at, updated_at)
-     VALUES (?, ?, ?, ?)`,
-    [employerId, JSON.stringify(credential), now, now]
-  );
-}
-
-/** Ensure employer has a profile credential; create one (no proof) if not. Returns the credential. */
-export async function ensureEmployerProfile(
-  input: EmployerProfileInput
-): Promise<Record<string, unknown>> {
-  const existing = await getEmployerProfile(input.employerId);
-  if (existing) return existing.credential;
-
-  const credential = buildEmployerProfileCredential(input);
-  const db = await getDb();
-  const now = new Date().toISOString();
-  await db.run(
-    `INSERT INTO employer_profiles (employer_id, credential, created_at, updated_at)
-     VALUES (?, ?, ?, ?)`,
-    [input.employerId, JSON.stringify(credential), now, now]
-  );
-  return credential;
 }

@@ -113,115 +113,84 @@
       </table>
     </div>
 
-    <!-- Reservation detail modal (credential-centric) -->
-    <div v-if="showDetailModal" class="modal-overlay" @click.self="closeDetail">
-      <div class="modal-content reservation-detail-modal">
-        <div class="modal-header">
-          <h3>Reservation: {{ selectedReservation?.referenceId || selectedReservation?.id }}</h3>
-          <div class="modal-header-actions">
-            <div class="view-toggle">
-              <button type="button" :class="{ active: !showRawCredential }" @click="showRawCredential = false">
-                <i class="pi pi-list"></i> Details
-              </button>
-              <button type="button" :class="{ active: showRawCredential }" @click="showRawCredential = true">
-                <i class="pi pi-code"></i> JSON
-              </button>
+    <!-- Reservation detail modal -->
+    <DetailModalCard
+      v-if="showDetailModal"
+      :title="`Reservation: ${selectedReservation?.referenceId || selectedReservation?.id || ''}`"
+      :credential="selectedReservation?.credential ?? null"
+      credential-title="ReservationCredential"
+      @close="closeDetail"
+    >
+      <template v-if="selectedReservation" #details>
+        <div class="detail-pane">
+          <div class="detail-hero">
+            <div class="hero-main">
+              <span class="hero-name">{{ selectedReservation.name }}</span>
+              <span :class="['type-badge', tenancyTypeClass(selectedReservation.tenancyType)]">{{ selectedReservation.tenancyType }}</span>
             </div>
-            <button type="button" class="modal-close" aria-label="Close" @click="closeDetail">
-              <i class="pi pi-times"></i>
-            </button>
+            <span :class="['status-badge status-badge-lg', selectedReservation.status]">{{ selectedReservation.status }}</span>
+          </div>
+
+          <div class="detail-strip">
+            <span class="strip-item"><i class="pi pi-id-card"></i> {{ selectedReservation.referenceId }}</span>
+            <span v-if="credValidFrom" class="strip-item"><i class="pi pi-calendar"></i> {{ credValidFrom }} – {{ credValidUntil }}</span>
+            <span class="strip-item"><i class="pi pi-clock"></i> Submitted {{ formatDate(selectedReservation.submittedAt) }}</span>
+          </div>
+
+          <div class="detail-sections">
+            <section class="detail-card">
+              <h4><i class="pi pi-user"></i> Contact</h4>
+              <dl class="detail-list">
+                <dt>Name</dt>
+                <dd>{{ selectedReservation.contactName || '—' }}{{ selectedReservation.contactTitle ? ` (${selectedReservation.contactTitle})` : '' }}</dd>
+                <dt>Email</dt>
+                <dd><a :href="`mailto:${selectedReservation.email}`">{{ selectedReservation.email }}</a></dd>
+                <dt>Phone</dt>
+                <dd>{{ selectedReservation.contactPhone || '—' }}</dd>
+              </dl>
+            </section>
+            <section class="detail-card">
+              <h4><i class="pi pi-building"></i> Business</h4>
+              <dl class="detail-list">
+                <dt>Registration ID</dt>
+                <dd>{{ selectedReservation.registrationId || '—' }}</dd>
+                <dt>Jurisdiction</dt>
+                <dd>{{ selectedReservation.jurisdiction || '—' }}</dd>
+                <dt>Address</dt>
+                <dd>{{ selectedReservation.businessAddress || '—' }}</dd>
+                <dt>Industry</dt>
+                <dd>{{ selectedReservation.industry || '—' }}</dd>
+                <dt>Intended use</dt>
+                <dd>{{ selectedReservation.intendedUse || '—' }}</dd>
+                <dt>Website</dt>
+                <dd>
+                  <a v-if="selectedReservation.website" :href="selectedReservation.website" target="_blank" rel="noopener">{{ selectedReservation.website }}</a>
+                  <span v-else class="text-muted">—</span>
+                </dd>
+              </dl>
+            </section>
           </div>
         </div>
-        <div v-if="selectedReservation" class="modal-body">
-          <!-- Details view -->
-          <template v-if="!showRawCredential">
-          <div class="detail-pane">
-            <div class="detail-hero">
-              <div class="hero-main">
-                <span class="hero-name">{{ selectedReservation.name }}</span>
-                <span :class="['type-badge', tenancyTypeClass(selectedReservation.tenancyType)]">{{ selectedReservation.tenancyType }}</span>
-              </div>
-              <span :class="['status-badge status-badge-lg', selectedReservation.status]">{{ selectedReservation.status }}</span>
-            </div>
-
-            <div class="detail-strip">
-              <span class="strip-item"><i class="pi pi-id-card"></i> {{ selectedReservation.referenceId }}</span>
-              <span v-if="credValidFrom" class="strip-item"><i class="pi pi-calendar"></i> {{ credValidFrom }} – {{ credValidUntil }}</span>
-              <span class="strip-item"><i class="pi pi-clock"></i> Submitted {{ formatDate(selectedReservation.submittedAt) }}</span>
-            </div>
-
-            <div class="detail-sections">
-              <section class="detail-card">
-                <h4><i class="pi pi-user"></i> Contact</h4>
-                <dl class="detail-list">
-                  <dt>Name</dt>
-                  <dd>{{ selectedReservation.contactName || '—' }}{{ selectedReservation.contactTitle ? ` (${selectedReservation.contactTitle})` : '' }}</dd>
-                  <dt>Email</dt>
-                  <dd><a :href="`mailto:${selectedReservation.email}`">{{ selectedReservation.email }}</a></dd>
-                  <dt>Phone</dt>
-                  <dd>{{ selectedReservation.contactPhone || '—' }}</dd>
-                </dl>
-              </section>
-              <section class="detail-card">
-                <h4><i class="pi pi-building"></i> Business</h4>
-                <dl class="detail-list">
-                  <dt>Registration ID</dt>
-                  <dd>{{ selectedReservation.registrationId || '—' }}</dd>
-                  <dt>Jurisdiction</dt>
-                  <dd>{{ selectedReservation.jurisdiction || '—' }}</dd>
-                  <dt>Address</dt>
-                  <dd>{{ selectedReservation.businessAddress || '—' }}</dd>
-                  <dt>Industry</dt>
-                  <dd>{{ selectedReservation.industry || '—' }}</dd>
-                  <dt>Intended use</dt>
-                  <dd>{{ selectedReservation.intendedUse || '—' }}</dd>
-                  <dt>Website</dt>
-                  <dd>
-                    <a v-if="selectedReservation.website" :href="selectedReservation.website" target="_blank" rel="noopener">{{ selectedReservation.website }}</a>
-                    <span v-else class="text-muted">—</span>
-                  </dd>
-                </dl>
-              </section>
-            </div>
-          </div>
-
-          <div v-if="selectedReservation.status === 'pending'" class="modal-actions">
-            <button type="button" class="btn-reject" @click="rejectFromModal">
-              <i class="pi pi-times"></i>
-              Reject
-            </button>
-            <button type="button" class="btn-approve" @click="approveFromModal">
-              <i class="pi pi-check"></i>
-              Approve
-            </button>
-          </div>
-          <div
-            v-else-if="selectedReservation.status === 'approved' && selectedTenant"
-            class="modal-actions"
-          >
-            <button type="button" class="btn-revoke" @click="revokeFromModal">
-              <i class="pi pi-ban"></i>
-              Revoke tenant
-            </button>
-          </div>
-          </template>
-
-          <!-- JSON view -->
-          <div v-else-if="selectedReservation.credential" class="raw-viewer raw-viewer-full">
-            <div class="raw-toolbar">
-              <span class="raw-title"><i class="pi pi-file"></i> ReservationCredential</span>
-              <button type="button" class="btn-copy" @click="copyCredential" :class="{ copied: copyFeedback }">
-                <i :class="copyFeedback ? 'pi pi-check' : 'pi pi-copy'"></i>
-                {{ copyFeedback ? 'Copied!' : 'Copy' }}
-              </button>
-            </div>
-            <div class="raw-content">
-              <pre class="credential-json" v-html="highlightedCredential"></pre>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      </template>
+      <template v-if="selectedReservation" #actions>
+        <template v-if="selectedReservation.status === 'pending'">
+          <button type="button" class="btn-reject" @click="rejectFromModal">
+            <i class="pi pi-times"></i>
+            Reject
+          </button>
+          <button type="button" class="btn-approve" @click="approveFromModal">
+            <i class="pi pi-check"></i>
+            Approve
+          </button>
+        </template>
+        <template v-else-if="selectedReservation.status === 'approved' && selectedTenant">
+          <button type="button" class="btn-revoke" @click="revokeFromModal">
+            <i class="pi pi-ban"></i>
+            Revoke tenant
+          </button>
+        </template>
+      </template>
+    </DetailModalCard>
 
     <!-- API key modal (shown after approval) -->
     <div v-if="approvedApiKey" class="modal-overlay" @click.self="closeApiKeyModal">
@@ -255,6 +224,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useTenantRequestStore } from '@/store/tenantRequestStore';
+import DetailModalCard from '@/components/DetailModalCard.vue';
 import type { TenancyType } from '@/store/tenantRequestStore';
 import type { TenantRequest } from '@/types/demo';
 import * as adminApi from '@/api/admin';
@@ -264,8 +234,6 @@ const loading = ref(false);
 const tenants = ref<adminApi.Tenant[]>([]);
 const showDetailModal = ref(false);
 const selectedReservation = ref<TenantRequest | null>(null);
-const showRawCredential = ref(false);
-const copyFeedback = ref(false);
 const approvedApiKey = ref<string | null>(null);
 const approvedEmail = ref<string | null>(null);
 const apiKeyCopyFeedback = ref(false);
@@ -302,12 +270,6 @@ const credValidUntil = computed(() => {
   return v ? new Date(v).toLocaleDateString(undefined, { dateStyle: 'medium' }) : null;
 });
 
-const highlightedCredential = computed(() => {
-  const cred = selectedReservation.value?.credential as Record<string, unknown> | undefined;
-  if (!cred) return '';
-  return highlightJson(JSON.stringify(cred, null, 2));
-});
-
 async function refresh() {
   loading.value = true;
   try {
@@ -330,7 +292,6 @@ onMounted(() => refresh());
 function openDetail(req: TenantRequest) {
   selectedReservation.value = req;
   showDetailModal.value = true;
-  showRawCredential.value = false;
 }
 
 function closeDetail() {
@@ -414,34 +375,6 @@ function formatDate(iso: string | undefined) {
     day: 'numeric',
     year: 'numeric',
   });
-}
-
-function formatCredential(cred: Record<string, unknown>) {
-  return JSON.stringify(cred, null, 2);
-}
-
-function highlightJson(json: string): string {
-  return json
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"([^"]*)":/g, '<span class="json-key">"$1"</span>:')
-    .replace(/: "([^"]*)"/g, ': <span class="json-string">"$1"</span>')
-    .replace(/: (-?\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
-    .replace(/: (true|false)/g, ': <span class="json-bool">$1</span>')
-    .replace(/: (null)/g, ': <span class="json-null">$1</span>');
-}
-
-async function copyCredential() {
-  const cred = selectedReservation.value?.credential as Record<string, unknown> | undefined;
-  if (!cred) return;
-  try {
-    await navigator.clipboard.writeText(formatCredential(cred));
-    copyFeedback.value = true;
-    setTimeout(() => { copyFeedback.value = false; }, 1500);
-  } catch {
-    /* clipboard fallback */
-  }
 }
 
 function tenancyTypeClass(type: TenancyType | undefined) {
@@ -602,7 +535,7 @@ function tenancyTypeClass(type: TenancyType | undefined) {
   }
 }
 
-/* Modal */
+/* Modal - API key modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -639,44 +572,6 @@ function tenancyTypeClass(type: TenancyType | undefined) {
   }
 }
 
-.modal-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.view-toggle {
-  display: inline-flex;
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 8px;
-  padding: 3px;
-
-  button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: $marketplace-text-muted;
-    background: transparent;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: color 0.2s, background 0.2s;
-
-    &:hover {
-      color: $marketplace-text;
-    }
-
-    &.active {
-      background: white;
-      color: $marketplace-primary;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-    }
-  }
-}
-
 .modal-close {
   padding: 8px;
   border: none;
@@ -693,207 +588,6 @@ function tenancyTypeClass(type: TenancyType | undefined) {
 
 .modal-body {
   padding: 20px;
-}
-
-.detail-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.detail-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 18px;
-  background: linear-gradient(135deg, rgba(0, 51, 102, 0.06) 0%, rgba(0, 51, 102, 0.02) 100%);
-  border: 1px solid rgba(0, 51, 102, 0.15);
-  border-radius: 12px;
-}
-
-.hero-main {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.hero-name {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: $marketplace-text;
-}
-
-.detail-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px 24px;
-  padding: 12px 0;
-  font-size: 0.85rem;
-  color: $marketplace-text-muted;
-}
-
-.strip-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  i { opacity: 0.7; font-size: 0.8rem; }
-}
-
-.status-badge-lg {
-  font-size: 0.75rem;
-  padding: 6px 12px;
-  border-radius: 20px;
-}
-
-.detail-sections {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-}
-
-.detail-card {
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid $marketplace-panel-border;
-  border-radius: 10px;
-
-  h4 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 12px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: $marketplace-text;
-
-    i { color: $marketplace-primary; font-size: 0.85rem; }
-  }
-}
-
-.detail-list {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 16px;
-  margin: 0;
-  font-size: 0.9rem;
-
-  dt {
-    margin: 0;
-    color: $marketplace-text-muted;
-    font-weight: 500;
-    font-size: 0.85rem;
-  }
-
-  dd {
-    margin: 0;
-    color: $marketplace-text;
-    word-break: break-word;
-
-    code {
-      font-size: 0.8rem;
-      padding: 2px 6px;
-      background: rgba(0, 0, 0, 0.06);
-      border-radius: 4px;
-    }
-
-    a {
-      color: $marketplace-primary;
-      text-decoration: none;
-      &:hover { text-decoration: underline; }
-    }
-  }
-}
-
-.modal-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid $marketplace-panel-border;
-}
-
-.raw-viewer {
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-
-.raw-viewer-full {
-  display: flex;
-  flex-direction: column;
-  height: 420px;
-  .raw-content {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-  }
-}
-
-.raw-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  background: linear-gradient(180deg, #2d2d2d 0%, #252525 100%);
-  color: #b0b0b0;
-  font-size: 0.8rem;
-}
-
-.raw-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-
-  i { color: #7dd3fc; }
-}
-
-.btn-copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #7dd3fc;
-  background: rgba(125, 211, 252, 0.12);
-  border: 1px solid rgba(125, 211, 252, 0.3);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover { background: rgba(125, 211, 252, 0.2); }
-  &.copied {
-    color: #86efac;
-    background: rgba(134, 239, 172, 0.15);
-    border-color: rgba(134, 239, 172, 0.4);
-  }
-}
-
-.raw-content {
-  background: #1a1a1a;
-  max-height: 320px;
-  overflow: auto;
-}
-
-.credential-json {
-  margin: 0;
-  padding: 16px;
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
-  font-size: 0.72rem;
-  line-height: 1.6;
-  color: #e5e5e5;
-  overflow-x: auto;
-  white-space: pre;
-
-  :deep(.json-key) { color: #7dd3fc; }
-  :deep(.json-string) { color: #86efac; }
-  :deep(.json-number) { color: #fde047; }
-  :deep(.json-bool) { color: #c084fc; }
-  :deep(.json-null) { color: #94a3b8; }
 }
 
 .api-key-modal {

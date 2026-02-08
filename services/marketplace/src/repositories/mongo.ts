@@ -212,17 +212,27 @@ export const tenantRepo = {
     return doc as Record<string, unknown> | null;
   },
 
+  async getByShortId(shortId: string): Promise<Record<string, unknown> | null> {
+    const db = await getMongoDb();
+    const col = db.collection(COLL.tenants);
+    const doc = await col.findOne({ shortId });
+    return doc as Record<string, unknown> | null;
+  },
+
   async create(data: {
     tenantRequestId: string;
     did?: string;
     walletId?: string;
     credential?: Record<string, unknown>;
+    shortId?: string;
   }): Promise<Record<string, unknown>> {
     const db = await getMongoDb();
     const col = db.collection(COLL.tenants);
     const id = `urn:uuid:${randomUUID()}`;
+    const shortId = data.shortId ?? randomBytes(6).toString('base64url');
     const doc = {
       id,
+      shortId,
       tenantRequestId: data.tenantRequestId,
       did: data.did ?? null,
       walletId: data.walletId ?? null,
@@ -238,12 +248,15 @@ export const tenantRepo = {
     tenantRequestId?: string;
     did?: string;
     walletId?: string;
+    shortId?: string;
   }): Promise<Record<string, unknown>> {
     const db = await getMongoDb();
     const col = db.collection(COLL.tenants);
     const id = options.did ?? `urn:uuid:${randomUUID()}`;
+    const shortId = options.shortId ?? randomBytes(6).toString('base64url');
     const doc = {
       id,
+      shortId,
       tenantRequestId: options.tenantRequestId ?? null,
       did: options.did ?? null,
       walletId: options.walletId ?? null,
@@ -291,14 +304,17 @@ export const tenantRepo = {
   },
 
   /** Save tenant from plugin provisioning response (handles snake_case or camelCase) */
-  async saveFromPlugin(tenant: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async saveFromPlugin(tenant: Record<string, unknown>, shortId?: string): Promise<Record<string, unknown>> {
     const db = await getMongoDb();
     const col = db.collection(COLL.tenants);
     const id = String(
       tenant.id ?? tenant.wallet_id ?? tenant.walletId ?? `urn:uuid:${randomUUID()}`
     );
+    const existing = await col.findOne({ id });
+    const resolvedShortId = shortId ?? (existing as Record<string, unknown>)?.shortId ?? randomBytes(6).toString('base64url');
     const doc = {
       id,
+      shortId: resolvedShortId,
       tenantRequestId: tenant.tenantRequestId ?? tenant.tenant_request_id ?? null,
       did: tenant.did ?? null,
       walletId: tenant.walletId ?? tenant.wallet_id ?? null,
@@ -372,14 +388,55 @@ export const employerProfileRepo = {
   },
 
   async ensure(employerId: string, credential: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const existing = await this.get(employerId);
-    if (existing) return existing;
-    return this.create(employerId, credential);
+    const db = await getMongoDb();
+    const col = db.collection(COLL.employer_profiles);
+    const nowStr = now();
+    const result = await col.findOneAndUpdate(
+      { employerId },
+      {
+        $set: { credential, updatedAt: nowStr },
+        $setOnInsert: { employerId, createdAt: nowStr },
+      },
+      { returnDocument: 'after', upsert: true }
+    );
+    return result as Record<string, unknown>;
   },
 };
 
-// Job postings
+// Job postings - visibility: true = on marketplace, false = hidden. status: 'active' = open, 'revoked' = cancelled/completed
 export const jobPostingRepo = {
+  /** Marketplace browse: only visible, non-revoked jobs */
+  async listAll(): Promise<unknown[]> {
+    const db = await getMongoDb();
+    const col = db.collection(COLL.job_postings);
+    const filter = {
+      $and: [
+        { $or: [{ visibility: true }, { visibility: { $exists: false } }] },
+        { status: { $ne: 'revoked' } },
+      ],
+    };
+    const docs = await col.find(filter).sort({ datePosted: -1 }).toArray();
+    const jobs: Record<string, unknown>[] = [];
+    for (const doc of docs) {
+      const job = doc as Record<string, unknown>;
+      const employerId = job.employerId as string;
+      const profile = employerId ? await employerProfileRepo.get(employerId) : null;
+      const cred = profile?.credential as Record<string, unknown> | undefined;
+      const subj = cred?.credentialSubject as Record<string, unknown> | undefined;
+      const employerName = (subj?.name as string) ?? 'Employer';
+      const logo = subj?.image as string | undefined;
+      jobs.push({
+        ...job,
+        name: job.title,
+        employerName,
+        employerLogo: logo,
+        employerImage: logo,
+        category: job.industry ?? 'General',
+      });
+    }
+    return jobs;
+  },
+
   async listByEmployer(employerId: string): Promise<unknown[]> {
     const db = await getMongoDb();
     const col = db.collection(COLL.job_postings);
@@ -419,11 +476,27 @@ export const jobPostingRepo = {
       benefits: data.benefits ?? null,
       industry: data.industry ?? null,
       credential: data.credential ?? null,
+      visibility: data.visibility ?? true,
+      status: data.status ?? 'active',
       createdAt: nowStr,
       updatedAt: nowStr,
     };
     await col.insertOne(doc);
     return doc;
+  },
+
+  async update(id: string, patch: { visibility?: boolean; status?: string }): Promise<Record<string, unknown> | null> {
+    const db = await getMongoDb();
+    const col = db.collection(COLL.job_postings);
+    const updateDoc: Record<string, unknown> = { updatedAt: now() };
+    if (patch.visibility !== undefined) updateDoc.visibility = patch.visibility;
+    if (patch.status !== undefined) updateDoc.status = patch.status;
+    const result = await col.findOneAndUpdate(
+      { id },
+      { $set: updateDoc },
+      { returnDocument: 'after' }
+    );
+    return result as Record<string, unknown> | null;
   },
 };
 

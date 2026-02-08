@@ -70,10 +70,6 @@
                   <i class="pi pi-eye"></i>
                   View
                 </button>
-                <button type="button" class="btn-view" @click="t?.id && openCredentialModal(t.id)">
-                  <i class="pi pi-file"></i>
-                  Credential
-                </button>
                 <button
                   v-if="t?.status !== 'revoked'"
                   type="button"
@@ -91,93 +87,81 @@
     </div>
 
     <!-- Tenant details modal -->
-    <div v-if="showDetailsModal" class="modal-overlay" @click.self="closeDetailsModal">
-      <div class="modal-content details-modal">
-        <div class="modal-header">
-          <h3>Tenant details</h3>
-          <button type="button" class="modal-close" aria-label="Close" @click="closeDetailsModal">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-        <div v-if="detailsLoading" class="modal-body loading">
+    <DetailModalCard
+      v-if="showDetailsModal"
+      title="Tenant details"
+      :credential="selectedDetails?.tenant?.credential ?? null"
+      credential-title="MarketplaceProfileCredential"
+      @close="closeDetailsModal"
+    >
+      <template v-if="detailsLoading" #details>
+        <div class="loading-state">
           <i class="pi pi-spin pi-spinner"></i>
           <p>Loading...</p>
         </div>
-        <div v-else-if="selectedDetails && !selectedDetails.tenant" class="modal-body">
-          <p class="text-muted">Tenant not found.</p>
-        </div>
-        <div v-else-if="selectedDetails?.tenant" class="modal-body">
-          <div class="detail-section">
-            <h4>Tenant</h4>
-            <dl class="detail-list">
-              <dt>ID</dt>
-              <dd><code>{{ selectedDetails.tenant.id }}</code></dd>
-              <dt>Status</dt>
-              <dd><span :class="['status-badge', selectedDetails.tenant.status]">{{ selectedDetails.tenant.status || 'active' }}</span></dd>
-              <dt>DID</dt>
-              <dd><code v-if="selectedDetails.tenant.did">{{ selectedDetails.tenant.did }}</code><span v-else class="text-muted">—</span></dd>
-              <dt>Wallet ID</dt>
-              <dd><code v-if="selectedDetails.tenant.walletId">{{ selectedDetails.tenant.walletId }}</code><span v-else class="text-muted">—</span></dd>
-              <dt>Created</dt>
-              <dd>{{ selectedDetails.tenant.createdAt ? formatDate(selectedDetails.tenant.createdAt) : '—' }}</dd>
-            </dl>
+      </template>
+      <template v-else-if="selectedDetails && !selectedDetails.tenant" #details>
+        <p class="text-muted">Tenant not found.</p>
+      </template>
+      <template v-else-if="selectedDetails?.tenant" #details>
+        <div class="detail-pane">
+          <div class="detail-hero">
+            <div class="hero-main">
+              <span class="hero-name">{{ tenantDisplayName }}</span>
+            </div>
+            <span :class="['status-badge status-badge-lg', selectedDetails.tenant.status || 'active']">{{ selectedDetails.tenant.status || 'Active' }}</span>
           </div>
-          <div v-if="selectedDetails.tenantRequest" class="detail-section">
-            <h4>Request details</h4>
-            <dl class="detail-list">
-              <dt>Name</dt>
-              <dd>{{ selectedDetails.tenantRequest.name }}</dd>
-              <dt>Email</dt>
-              <dd>{{ selectedDetails.tenantRequest.email }}</dd>
-              <dt>Type</dt>
-              <dd>{{ selectedDetails.tenantRequest.tenancyType || '—' }}</dd>
-              <dt>Industry</dt>
-              <dd>{{ selectedDetails.tenantRequest.industry || '—' }}</dd>
-              <dt>Website</dt>
-              <dd><a v-if="selectedDetails.tenantRequest.website" :href="selectedDetails.tenantRequest.website" target="_blank" rel="noopener">{{ selectedDetails.tenantRequest.website }}</a><span v-else class="text-muted">—</span></dd>
-              <dt>Contact</dt>
-              <dd>{{ selectedDetails.tenantRequest.contactName || '—' }}{{ selectedDetails.tenantRequest.contactTitle ? ` (${selectedDetails.tenantRequest.contactTitle})` : '' }}</dd>
-            </dl>
-          </div>
-          <div v-if="selectedDetails.tenant.credential" class="detail-section">
-            <h4>Tenant credential (MarketplaceProfileCredential)</h4>
-            <pre class="credential-json">{{ formatCredential(selectedDetails.tenant.credential) }}</pre>
-          </div>
-          <div v-else class="detail-section">
-            <h4>Tenant credential</h4>
-            <p class="text-muted">No credential stored for this tenant.</p>
-          </div>
-          <div v-if="selectedDetails.tenant.status !== 'revoked'" class="modal-actions">
-            <button type="button" class="btn-danger" @click="doRevoke(selectedDetails.tenant.id)">
-              <i class="pi pi-ban"></i>
-              Revoke access
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Credential modal -->
-    <div v-if="showCredentialModal" class="modal-overlay" @click.self="closeCredentialModal">
-      <div class="modal-content credential-modal">
-        <div class="modal-header">
-          <h3>Tenant credential</h3>
-          <button type="button" class="modal-close" aria-label="Close" @click="closeCredentialModal">
-            <i class="pi pi-times"></i>
-          </button>
+          <div class="detail-strip">
+            <span v-if="selectedDetails.tenant.id" class="strip-item"><i class="pi pi-id-card"></i> {{ selectedDetails.tenant.id }}</span>
+            <span v-if="selectedDetails.tenant.did" class="strip-item"><i class="pi pi-key"></i> {{ selectedDetails.tenant.did }}</span>
+            <span v-if="selectedDetails.tenant.walletId" class="strip-item"><i class="pi pi-wallet"></i> {{ selectedDetails.tenant.walletId }}</span>
+            <span class="strip-item"><i class="pi pi-clock"></i> Created {{ formatDate(selectedDetails.tenant.createdAt) }}</span>
+          </div>
+
+          <div class="detail-sections">
+            <section class="detail-card">
+              <h4><i class="pi pi-database"></i> Tenant</h4>
+              <dl class="detail-list">
+                <dt>ID</dt>
+                <dd><code>{{ selectedDetails.tenant.id }}</code></dd>
+                <dt>Status</dt>
+                <dd><span :class="['status-badge', selectedDetails.tenant.status || 'active']">{{ selectedDetails.tenant.status || 'Active' }}</span></dd>
+                <dt>DID</dt>
+                <dd><code v-if="selectedDetails.tenant.did">{{ selectedDetails.tenant.did }}</code><span v-else class="text-muted">—</span></dd>
+                <dt>Wallet ID</dt>
+                <dd><code v-if="selectedDetails.tenant.walletId">{{ selectedDetails.tenant.walletId }}</code><span v-else class="text-muted">—</span></dd>
+                <dt>Created</dt>
+                <dd>{{ selectedDetails.tenant.createdAt ? formatDate(selectedDetails.tenant.createdAt) : '—' }}</dd>
+              </dl>
+            </section>
+            <section v-if="selectedDetails.tenantRequest" class="detail-card">
+              <h4><i class="pi pi-user"></i> Request details</h4>
+              <dl class="detail-list">
+                <dt>Name</dt>
+                <dd>{{ selectedDetails.tenantRequest.name }}</dd>
+                <dt>Email</dt>
+                <dd><a :href="`mailto:${selectedDetails.tenantRequest.email}`">{{ selectedDetails.tenantRequest.email }}</a></dd>
+                <dt>Type</dt>
+                <dd>{{ selectedDetails.tenantRequest.tenancyType || '—' }}</dd>
+                <dt>Industry</dt>
+                <dd>{{ selectedDetails.tenantRequest.industry || '—' }}</dd>
+                <dt>Website</dt>
+                <dd><a v-if="selectedDetails.tenantRequest.website" :href="selectedDetails.tenantRequest.website" target="_blank" rel="noopener">{{ selectedDetails.tenantRequest.website }}</a><span v-else class="text-muted">—</span></dd>
+                <dt>Contact</dt>
+                <dd>{{ selectedDetails.tenantRequest.contactName || '—' }}{{ selectedDetails.tenantRequest.contactTitle ? ` (${selectedDetails.tenantRequest.contactTitle})` : '' }}</dd>
+              </dl>
+            </section>
+          </div>
         </div>
-        <div v-if="credentialLoading" class="modal-body loading">
-          <i class="pi pi-spin pi-spinner"></i>
-          <p>Loading...</p>
-        </div>
-        <div v-else-if="credentialData" class="modal-body">
-          <pre class="credential-json">{{ formatCredential(credentialData) }}</pre>
-        </div>
-        <div v-else class="modal-body">
-          <p class="text-muted">No credential stored for this tenant.</p>
-        </div>
-      </div>
-    </div>
+      </template>
+      <template v-if="selectedDetails?.tenant && selectedDetails.tenant.status !== 'revoked'" #actions>
+        <button type="button" class="btn-danger" @click="doRevoke(selectedDetails.tenant.id)">
+          <i class="pi pi-ban"></i>
+          Revoke access
+        </button>
+      </template>
+    </DetailModalCard>
 
     <!-- Revoke confirmation modal -->
     <div v-if="revokeTarget" class="modal-overlay" @click.self="revokeTarget = null">
@@ -253,6 +237,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
 import * as adminApi from '@/api/admin';
+import DetailModalCard from '@/components/DetailModalCard.vue';
 
 const tenants = ref<adminApi.Tenant[]>([]);
 const validTenants = computed(() => tenants.value.filter((t): t is adminApi.Tenant => t != null && t.id != null));
@@ -263,9 +248,6 @@ const createError = ref('');
 const showDetailsModal = ref(false);
 const detailsLoading = ref(false);
 const selectedDetails = ref<adminApi.TenantDetails | null>(null);
-const showCredentialModal = ref(false);
-const credentialLoading = ref(false);
-const credentialData = ref<Record<string, unknown> | null>(null);
 const revokeTarget = ref<adminApi.Tenant | null>(null);
 const revoking = ref(false);
 const revokeError = ref('');
@@ -276,15 +258,16 @@ const createForm = reactive({
   walletId: '',
 });
 
+const tenantDisplayName = computed(() => {
+  const d = selectedDetails.value;
+  if (!d?.tenant) return '';
+  return d.tenantRequest?.name || d.tenant.id || 'Tenant';
+});
+
 function shortId(id: string) {
   if (!id) return '';
   if (id.length <= 20) return id;
   return id.slice(0, 8) + '…' + id.slice(-8);
-}
-
-function formatCredential(cred: Record<string, unknown> | null | undefined) {
-  if (cred == null) return '{}';
-  return JSON.stringify(cred, null, 2);
 }
 
 async function openDetails(id: string) {
@@ -310,27 +293,6 @@ async function openDetails(id: string) {
 function closeDetailsModal() {
   showDetailsModal.value = false;
   selectedDetails.value = null;
-}
-
-async function openCredentialModal(id: string) {
-  showCredentialModal.value = true;
-  credentialData.value = null;
-  credentialLoading.value = true;
-  try {
-    const data = await adminApi.getTenantDetails(id);
-    const raw = data as unknown as Record<string, unknown> | null | undefined;
-    const tenant = raw?.tenant ?? (raw?.id ? raw : null);
-    credentialData.value = (tenant as { credential?: Record<string, unknown> })?.credential ?? null;
-  } catch {
-    credentialData.value = null;
-  } finally {
-    credentialLoading.value = false;
-  }
-}
-
-function closeCredentialModal() {
-  showCredentialModal.value = false;
-  credentialData.value = null;
 }
 
 function confirmRevoke(t: adminApi.Tenant) {
@@ -581,18 +543,6 @@ function formatDate(iso: string) {
   max-height: 90vh;
   overflow-y: auto;
 
-  &.details-modal {
-    max-width: 560px;
-  }
-
-  &.credential-modal {
-    max-width: 640px;
-
-    .credential-json {
-      max-height: 400px;
-    }
-  }
-
   &.confirm-modal {
     max-width: 400px;
   }
@@ -683,80 +633,6 @@ function formatDate(iso: string) {
       }
     }
   }
-}
-
-.modal-body {
-  padding: 1.25rem 1.5rem;
-
-  &.loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    color: $marketplace-text-muted;
-  }
-}
-
-.detail-section {
-  margin-bottom: 1.5rem;
-
-  &:last-of-type {
-    margin-bottom: 0;
-  }
-
-  h4 {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: $marketplace-primary;
-    margin: 0 0 10px 0;
-  }
-}
-
-.detail-list {
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  gap: 6px 16px;
-  font-size: 0.9rem;
-  margin: 0;
-
-  dt {
-    color: $marketplace-text-muted;
-    font-weight: 500;
-  }
-
-  dd {
-    margin: 0;
-    word-break: break-word;
-
-    code {
-      font-size: 0.85rem;
-      font-family: ui-monospace, monospace;
-    }
-
-    a {
-      color: $marketplace-primary;
-    }
-  }
-}
-
-.credential-json {
-  font-size: 0.8rem;
-  font-family: ui-monospace, monospace;
-  background: rgba(0, 0, 0, 0.04);
-  padding: 12px;
-  border-radius: 8px;
-  overflow-x: auto;
-  max-height: 240px;
-  overflow-y: auto;
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.modal-actions {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid $marketplace-panel-border;
 }
 
 .btn-danger {

@@ -1,16 +1,16 @@
 <template>
-  <div class="admin-action-menu">
+  <div class="admin-workflow-config">
     <div class="section-header">
-      <h2 class="section-title">Action menu</h2>
+      <h2 class="section-title">Configure workflow</h2>
       <div class="header-actions">
         <button
           type="button"
           class="refresh-btn"
-          :disabled="loading"
-          @click="load"
+          :disabled="loading || workflowsLoading"
+          @click="refreshAll"
         >
-          <i :class="loading ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'"></i>
-          {{ loading ? 'Loading...' : 'Refresh' }}
+          <i :class="loading || workflowsLoading ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'"></i>
+          {{ loading || workflowsLoading ? 'Loading...' : 'Refresh' }}
         </button>
         <button
           type="button"
@@ -90,6 +90,38 @@
         <p v-else-if="trustRegistryCredentialTypes.length === 0" class="all-added-hint">Add credential types to trust registry entries first.</p>
       </div>
     </div>
+
+    <div class="workflow-instances-section">
+      <h3>Current workflow instances</h3>
+      <p class="section-hint">Workflows created when tenant provisioning is triggered</p>
+      <div v-if="workflowsLoading && workflows.length === 0" class="empty-state small">
+        <i class="pi pi-spin pi-spinner"></i>
+        <p>Loading workflows...</p>
+      </div>
+      <div v-else-if="workflows.length === 0" class="empty-state small">
+        <i class="pi pi-sitemap"></i>
+        <p>No workflow instances</p>
+      </div>
+      <div v-else class="card-grid">
+        <article
+          v-for="w in workflows"
+          :key="w.id"
+          class="marketplace-card admin-card workflow-card"
+        >
+          <div class="card-header">
+            <span class="workflow-type">{{ w.workflowType }}</span>
+            <span class="status-badge" :class="w.status">{{ w.status }}</span>
+          </div>
+          <div class="card-body">
+            <p v-if="w.tenantRequestId"><strong>Request:</strong> {{ w.tenantRequestId }}</p>
+            <p v-if="w.currentStep"><strong>Step:</strong> {{ w.currentStep }}</p>
+            <p v-if="w.errorMessage" class="error-msg">{{ w.errorMessage }}</p>
+            <p class="date">Started {{ formatDate(w.startedAt) }}</p>
+            <p v-if="w.completedAt" class="date">Completed {{ formatDate(w.completedAt) }}</p>
+          </div>
+        </article>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -107,6 +139,8 @@ const SHARE_TRANSCRIPT = { title: 'Share transcript', description: 'Share your t
 const config = ref<adminApi.ActionMenuConfig | null>(null);
 const loading = ref(false);
 const saving = ref(false);
+const workflows = ref<adminApi.Workflow[]>([]);
+const workflowsLoading = ref(false);
 const addCredentialTypeChoice = ref('');
 const trustRegistryCredentialTypes = ref<string[]>([]);
 
@@ -181,6 +215,31 @@ async function load() {
   }
 }
 
+async function loadWorkflows() {
+  workflowsLoading.value = true;
+  try {
+    workflows.value = await adminApi.listWorkflows();
+  } catch {
+    workflows.value = [];
+  } finally {
+    workflowsLoading.value = false;
+  }
+}
+
+async function refreshAll() {
+  await Promise.all([load(), loadWorkflows()]);
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 async function save() {
   const items = buildItems();
   const payload: adminApi.ActionMenuConfig = {
@@ -198,14 +257,17 @@ async function save() {
   }
 }
 
-onMounted(() => load());
+onMounted(() => {
+  load();
+  loadWorkflows();
+});
 </script>
 
 <style scoped lang="scss">
 @use '@/assets/admin-common.scss';
 @use '@/assets/variables.scss' as *;
 
-.admin-action-menu {
+.admin-workflow-config {
   .header-actions {
     display: flex;
     gap: 8px;
@@ -374,6 +436,65 @@ onMounted(() => load());
     font-size: 0.9rem;
     color: $marketplace-text-muted;
     margin: 16px 0 0 0;
+  }
+}
+
+.workflow-instances-section {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid $marketplace-panel-border;
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $marketplace-text;
+    margin: 0 0 4px 0;
+  }
+
+  .section-hint {
+    font-size: 0.875rem;
+    color: $marketplace-text-muted;
+    margin: 0 0 16px 0;
+  }
+
+  .empty-state.small {
+    padding: 1.5rem;
+    i { font-size: 1.5rem; }
+    p { font-size: 0.9rem; }
+  }
+}
+
+.workflow-card {
+  .workflow-type {
+    font-weight: 600;
+    color: $marketplace-primary;
+  }
+
+  .status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+
+    &.running {
+      background: rgba(207, 150, 5, 0.15);
+      color: $marketplace-warning;
+    }
+
+    &.completed {
+      background: rgba(51, 108, 55, 0.15);
+      color: $marketplace-success;
+    }
+
+    &.failed {
+      background: rgba(248, 73, 73, 0.12);
+      color: $marketplace-danger;
+    }
+  }
+
+  .error-msg {
+    color: $marketplace-danger;
+    font-size: 0.9rem;
   }
 }
 </style>

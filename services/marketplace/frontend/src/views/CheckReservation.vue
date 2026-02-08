@@ -1,5 +1,5 @@
 <template>
-  <div class="check-reservation">
+  <div class="check-reservation page-container">
     <button type="button" class="back-link" @click="goBack">
       <i class="pi pi-arrow-left"></i>
       Back
@@ -11,9 +11,12 @@
       <form class="lookup-form" @submit.prevent="handleLookup">
         <div class="input-wrap">
           <input
+            id="reservation-id"
             v-model="reservationId"
             type="text"
+            name="reservationId"
             placeholder="e.g. REQ-7K2M9 or urn:reservation:REQ-7K2M9"
+            maxlength="200"
             class="input"
             autocomplete="off"
           />
@@ -100,32 +103,10 @@ async function handleLookup() {
 
 <style scoped lang="scss">
 @use '@/assets/variables.scss' as *;
+@use '@/assets/page-common.scss';
 
 .check-reservation {
   min-height: 60vh;
-  padding: 2rem 1rem;
-  max-width: 520px;
-  margin: 0 auto;
-}
-
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  margin-bottom: 12px;
-  border: none;
-  background: transparent;
-  color: $marketplace-text-muted;
-  font-size: 0.85rem;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: color 0.2s;
-
-  &:hover {
-    color: $marketplace-primary;
-  }
 }
 
 .check-section {

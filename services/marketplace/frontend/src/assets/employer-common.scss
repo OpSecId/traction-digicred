@@ -4,11 +4,22 @@
 .back-link {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: $marketplace-accent-alt;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: $marketplace-text-muted;
+  font-size: 0.85rem;
   font-weight: 500;
-  margin-bottom: 20px;
+  font-family: inherit;
+  margin-bottom: 12px;
+  cursor: pointer;
   text-decoration: none;
+  transition: color 0.2s;
+
+  &:hover {
+    color: $marketplace-primary;
+  }
 }
 
 .no-employer {

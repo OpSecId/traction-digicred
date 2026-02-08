@@ -5,5 +5,5 @@
 </template>
 
 <script setup lang="ts">
-// Wrapper for marketplace admin sub-routes (invitation, action-menu, transcript-analysis)
+// Wrapper for marketplace admin sub-routes (invitation; workflow config moved to /innkeeper/workflows)
 </script>

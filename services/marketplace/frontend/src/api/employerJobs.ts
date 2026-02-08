@@ -45,6 +45,10 @@ export interface JobPosting {
   benefits?: string;
   industry?: string;
   credential?: Record<string, unknown>;
+  /** Whether visible on marketplace browse. Default true. */
+  visibility?: boolean;
+  /** active = open, revoked = cancelled/completed */
+  status?: 'active' | 'revoked';
   createdAt?: string;
   updatedAt?: string;
 }
@@ -136,4 +140,29 @@ export async function getJobPosting(id: string): Promise<JobPosting | null> {
     if (axios.isAxiosError(err) && err.response?.status === 404) return null;
     throw err;
   }
+}
+
+export async function updateJobVisibility(
+  jobId: string,
+  employerId: string,
+  visibility: boolean
+): Promise<JobPosting> {
+  const res = await axios.patch<JobPosting>('/api/employer/jobs', { visibility }, {
+    params: { id: jobId, employerId },
+  });
+  return res.data;
+}
+
+export async function revokeJobPosting(jobId: string, employerId: string): Promise<JobPosting> {
+  const res = await axios.patch<JobPosting>('/api/employer/jobs', { status: 'revoked' }, {
+    params: { id: jobId, employerId },
+  });
+  return res.data;
+}
+
+export async function reopenJobPosting(jobId: string, employerId: string): Promise<JobPosting> {
+  const res = await axios.patch<JobPosting>('/api/employer/jobs', { status: 'active' }, {
+    params: { id: jobId, employerId },
+  });
+  return res.data;
 }

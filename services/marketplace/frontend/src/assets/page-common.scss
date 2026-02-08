@@ -1,0 +1,356 @@
+@use 'variables.scss' as *;
+
+// Shared styles for main app pages (tenant flow, reservation, check reservation)
+// Excludes: channel pages, admin pages (they use admin-common)
+
+.page-container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 16px 24px;
+  width: 100%;
+  box-sizing: border-box;
+
+  @media (min-width: 768px) {
+    padding: 16px 24px 32px;
+  }
+
+  &.page-container--register {
+    max-width: 720px;
+
+    .tenancy-reservation-content,
+    .onboard-content {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .tenancy-reservation-form,
+    .onboard-form,
+    .form-box {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: $marketplace-text-muted;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  margin-bottom: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s;
+
+  &:hover {
+    color: $marketplace-primary;
+  }
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $marketplace-primary;
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  font-size: 0.9rem;
+  color: $marketplace-text-muted;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+// Form blocks
+.form-box {
+  background: $marketplace-bg-card;
+  border: 1px solid $marketplace-panel-border;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.form-box-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $marketplace-primary;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid $marketplace-panel-border;
+}
+
+.form-box-desc {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: $marketplace-text-muted;
+  margin: -4px 0 0 0;
+}
+
+.form-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.block-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: $marketplace-text;
+  margin: 0;
+
+  .req {
+    color: $marketplace-danger;
+  }
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid $marketplace-panel-border;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: $marketplace-bg-card;
+  transition: border-color 0.2s, box-shadow 0.15s;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: $marketplace-text-muted;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $marketplace-primary;
+    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+  }
+}
+
+select.input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236c757d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.input-textarea {
+  resize: vertical;
+  min-height: 48px;
+}
+
+.form-error {
+  font-size: 0.9rem;
+  color: $marketplace-danger;
+  margin: 0 0 12px 0;
+}
+
+.submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  margin-top: 4px;
+  background: $marketplace-primary;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:hover:not(:disabled) {
+    opacity: 0.92;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+// Login form (used inside LoginLayout)
+.login-form-header {
+  margin-bottom: 24px;
+
+  h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: $marketplace-primary;
+    margin: 0 0 4px 0;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: $marketplace-text-muted;
+    margin: 0;
+  }
+
+  @media (min-width: 900px) {
+    margin-bottom: 32px;
+
+    h2 {
+      font-size: 1.5rem;
+      margin: 0 0 6px 0;
+    }
+
+    p {
+      font-size: 0.95rem;
+    }
+  }
+}
+
+.login-form-field {
+  margin-bottom: 16px;
+
+  @media (min-width: 900px) {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: $marketplace-text;
+  }
+
+  input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid $marketplace-panel-border;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: $marketplace-bg-card;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: $marketplace-primary;
+      box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+    }
+  }
+}
+
+.login-form-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(248, 73, 73, 0.08);
+  border: 1px solid rgba(248, 73, 73, 0.25);
+  border-radius: 8px;
+  color: $marketplace-danger;
+  font-size: 0.9rem;
+  margin: 0 0 20px 0;
+}
+
+.login-submit-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: $marketplace-primary;
+  color: $marketplace-text-on-primary;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s, transform 0.15s;
+
+  &:hover:not(:disabled) {
+    background: #002952;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.login-form-footer {
+  margin-top: 20px;
+  padding-top: 16px;
+
+  @media (min-width: 900px) {
+    margin-top: 24px;
+    padding-top: 20px;
+  }
+  border-top: 1px solid $marketplace-panel-border;
+  text-align: center;
+
+  p {
+    font-size: 0.9rem;
+    color: $marketplace-text-muted;
+    margin: 0 0 12px 0;
+  }
+
+  a {
+    font-weight: 500;
+    color: $marketplace-primary;
+    text-decoration: none;
+    transition: color 0.2s;
+
+    &:hover {
+      color: $marketplace-secondary;
+      text-decoration: underline;
+    }
+
+    &.secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+  }
+}
+
+.login-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+
+  @media (min-width: 900px) {
+    margin-top: 24px;
+  }
+  font-size: 0.9rem;
+  color: $marketplace-text-muted;
+  text-decoration: none;
+  transition: color 0.2s;
+
+  &:hover {
+    color: $marketplace-primary;
+  }
+}

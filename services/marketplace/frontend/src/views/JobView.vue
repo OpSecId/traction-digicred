@@ -121,23 +121,52 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useDemoStore } from '@/store/demoStore';
+import { useJobsStore } from '@/store/jobsStore';
 import { useApplicantStore } from '@/store/applicantStore';
+import { getJobPosting, getEmployerProfile } from '@/api/employerJobs';
 import { employerInitials, avatarStyle, employerHeaderStyle } from '@/utils/employerUtils';
 import StatusMessage from '@/components/StatusMessage.vue';
-import type { JobWithEmployer } from '@/types/demo';
+import type { JobWithEmployer } from '@/api/jobs';
 
 const route = useRoute();
 const router = useRouter();
-const demoStore = useDemoStore();
+const jobsStore = useJobsStore();
 const applicantStore = useApplicantStore();
+const fetchedJob = ref<JobWithEmployer | null>(null);
 
 const job = computed<JobWithEmployer | undefined>(() => {
   const jobId = route.params.jobId as string;
-  return demoStore.allJobs.find((j) => j.id === jobId);
+  const fromStore = jobsStore.allJobs.find((j) => j.id === jobId);
+  if (fromStore) return fromStore;
+  if (fetchedJob.value?.id === jobId) return fetchedJob.value;
+  return undefined;
 });
+
+watch(
+  () => route.params.jobId,
+  async (param) => {
+    const jobId = Array.isArray(param) ? param[0] : param;
+    if (!jobId) return;
+    if (jobsStore.allJobs.some((j) => j.id === jobId)) return;
+    if (fetchedJob.value?.id === jobId) return;
+    const j = await getJobPosting(jobId);
+    if (j) {
+      const profile = j.employerId ? await getEmployerProfile(j.employerId) : null;
+      const cred = profile?.credential as { credentialSubject?: { name?: string; image?: string } } | undefined;
+      const subj = cred?.credentialSubject ?? {};
+      fetchedJob.value = {
+        ...j,
+        name: j.title,
+        employerName: subj.name ?? 'Employer',
+        employerLogo: subj.image,
+        category: j.industry ?? 'General',
+      };
+    } else fetchedJob.value = null;
+  },
+  { immediate: true }
+);
 
 const showApplyModal = ref(false);
 

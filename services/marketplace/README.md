@@ -28,7 +28,7 @@ npm run dev
 ```
 marketplace/
 ├── config/
-│   └── demo.yaml          # Demo personas, jobs, credentials
+│   └── trust-registry.yaml # Trust registries
 ├── frontend/               # Vue 3 + Vite PWA
 ├── src/
 │   └── server.ts          # Express API server

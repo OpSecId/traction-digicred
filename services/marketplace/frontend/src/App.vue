@@ -6,15 +6,36 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import Toast from 'primevue/toast';
-import { useDemoStore } from '@/store/demoStore';
+import { useJobsStore } from '@/store/jobsStore';
+import { useEmployerStore } from '@/store/employerStore';
+import { useAdminStore } from '@/store/adminStore';
+import { getTenantSession, getInnkeeperSession } from '@/api/auth';
 
-const demoStore = useDemoStore();
+const jobsStore = useJobsStore();
+const employerStore = useEmployerStore();
+const adminStore = useAdminStore();
 
 onMounted(async () => {
   try {
-    await demoStore.load();
+    await jobsStore.load();
   } catch (e) {
-    console.error('Failed to load demo config:', e);
+    console.error('Failed to load jobs:', e);
+  }
+  try {
+    const session = await getTenantSession();
+    if (session.employerId) {
+      employerStore.setEmployer(session.employerId);
+    }
+  } catch {
+    // Session not available or Redis not configured
+  }
+  try {
+    const innkeeperSession = await getInnkeeperSession();
+    if (innkeeperSession.isAdmin) {
+      adminStore.setLoggedIn(true);
+    }
+  } catch {
+    // Innkeeper session not available or Redis not configured
   }
 });
 </script>

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { listJobPostings, getJobPosting, type JobPosting } from '@/api/employerJobs';
 
-/** Caches employer-created job postings for use in JobDetail, JobApplicants, etc. */
+/** Caches employer-created job postings for use in EmployerJobs, JobApplicants, etc. */
 export const useEmployerJobStore = defineStore('employerJob', () => {
   const jobs = ref<JobPosting[]>([]);
 

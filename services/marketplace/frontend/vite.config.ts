@@ -153,11 +153,6 @@ export default defineConfig({
         target: process.env.VITE_API_TARGET || 'http://127.0.0.1:5174',
         changeOrigin: true,
       },
-      '/api/config/demo': {
-        target: process.env.VITE_API_TARGET || 'http://127.0.0.1:5174',
-        changeOrigin: true,
-        bypass: () => '/demo.json', // serve demo.json when backend not running
-      },
       '/api': {
         target: process.env.VITE_API_TARGET || 'http://127.0.0.1:5174',
         changeOrigin: true,

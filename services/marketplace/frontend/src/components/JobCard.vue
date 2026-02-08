@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 import { avatarStyle, headerStyle, employerInitials } from '@/utils/employerUtils';
-import type { JobWithEmployer } from '@/types/demo';
+import type { JobWithEmployer } from '@/api/jobs';
 
 defineProps<{ job: JobWithEmployer }>();
 defineEmits<{ click: [jobId: string] }>();

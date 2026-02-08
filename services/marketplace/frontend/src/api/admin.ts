@@ -141,11 +141,53 @@ export async function updateCredentialAnalysisConfig(
   return res.data;
 }
 
+/** Course list format for transcript-skills-analysis lambda: [title, code] pairs */
+export type CourseListEntry = [string, string];
+
+export interface SkillOfInterest {
+  name: string;
+  category?: string;
+  pathways?: string;
+  count?: number;
+  max_skill_level?: number;
+  skill_level_average?: string;
+  courses?: Array<[string, number]>;
+}
+
+export interface TranscriptSkillsAnalysisResponse {
+  count: string;
+  skills_of_interest: SkillOfInterest[];
+  skill_level_counts: [number, number, number];
+  summary: string;
+  course_ids: string[];
+}
+
+export async function analyzeTranscriptSkills(coursesList: CourseListEntry[]): Promise<TranscriptSkillsAnalysisResponse> {
+  const res = await axios.post<TranscriptSkillsAnalysisResponse>('/api/innkeeper/transcript-skills-analysis', {
+    coursesList,
+  }, { timeout: 60000 });
+  return res.data;
+}
+
 export async function listTrustRegistries(): Promise<TrustRegistry[]> {
   const res = await axios.get<{ trustRegistries: TrustRegistry[] }>('/api/innkeeper/trust-registries', {
     timeout: API_TIMEOUT_MS,
   });
   return res.data?.trustRegistries ?? [];
+}
+
+export async function addTrustRegistryEntry(data: {
+  name: string;
+  type?: string;
+  did?: string;
+  credentialTypes?: string[];
+  logo?: string;
+  website?: string;
+}): Promise<TrustRegistry> {
+  const res = await axios.post<TrustRegistry>('/api/innkeeper/trust-registries', data, {
+    timeout: API_TIMEOUT_MS,
+  });
+  return res.data;
 }
 
 /** Union of credential types across all trust registries (sorted). */

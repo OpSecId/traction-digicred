@@ -1,14 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { useDemoStore } from './demoStore';
 import * as tenantApi from '@/api/tenantRequests';
 import type { TenantRequest, TenancyType } from '@/types/demo';
 
 export type { TenancyType };
 
 export const useTenantRequestStore = defineStore('tenantRequest', () => {
-  const demoStore = useDemoStore();
-
   // Local overrides for approve/reject (when API unavailable)
   const statusOverrides = ref<Record<string, 'approved' | 'rejected'>>({});
 
@@ -23,9 +20,7 @@ export const useTenantRequestStore = defineStore('tenantRequest', () => {
 
   const requests = computed(() => {
     const base =
-      apiAvailable.value === true
-        ? apiRequests.value
-        : [...localRequests.value, ...demoStore.tenantRequests];
+      apiAvailable.value === true ? apiRequests.value : localRequests.value;
     return base.map((r) => ({
       ...r,
       status: (statusOverrides.value[r.id] ?? r.status ?? 'pending') as TenantRequest['status'],

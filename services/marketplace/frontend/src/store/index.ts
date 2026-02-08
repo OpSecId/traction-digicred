@@ -1,5 +1,5 @@
 export { useAdminStore } from './adminStore';
-export { useDemoStore } from './demoStore';
+export { useJobsStore } from './jobsStore';
 export { useEmployerStore } from './employerStore';
 export { useEmployerJobStore } from './employerJobStore';
 export { useApplicantStore } from './applicantStore';

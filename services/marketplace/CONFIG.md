@@ -4,7 +4,6 @@
 
 | File | Purpose |
 |------|---------|
-| `config/demo.yaml` | Demo personas, jobs, tenant requests, admin/employer logins |
 | `config/trust-registry.yaml` | Trust registries (education institutions, employers) |
 | `config/credential-analysis.yaml` | Default credential analysis workflow (credential types, extraction, matching). Admin can override via Admin UI. |
 
@@ -151,6 +150,8 @@ The service worker provides:
 | `DATABASE_URL` | PostgreSQL connection URL (required when DATABASE_TYPE=postgres) |
 | `DATABASE_PATH` | SQLite database file path (default: ./data/marketplace.db) |
 | `CORS_ORIGIN` | Comma-separated allowed origins (empty = allow all, dev only) |
+| `INNKEEPER_EMAIL` | Innkeeper admin login email (required for admin view) |
+| `INNKEEPER_PASSWORD` | Innkeeper admin login password (required for admin view) |
 | `MARKETPLACE_AGENCY_URI` | Single multitenant ACA-Py agent (Innkeeper + Marketplace plugins) base URL, e.g. `http://localhost:8031` |
 | `MARKETPLACE_AGENCY_API_KEY` | API key for Marketplace Agency API authentication |
 | `MARKETPLACE_INNKEEPER_TOKEN` | Innkeeper tenant Bearer token for tenant-scoped calls (e.g. `/vc/sign`). Get from agent startup logs or `POST /multitenancy/tenant/{tenant_id}/token` |

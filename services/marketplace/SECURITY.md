@@ -22,6 +22,12 @@ This is a demo/reference implementation. Security updates are applied as needed.
 
 5. **Local overrides** – Use `config.local.json` for local secrets; it is gitignored.
 
+6. **Rate limiting** – Auth endpoints (tenant-login, innkeeper-login) are limited to 15 attempts per 15 minutes per IP. Tenant request submission is limited to 30 per 15 minutes. Adjust via environment if needed.
+
+7. **Request size** – JSON body limit is 100kb to mitigate large-payload DoS.
+
+8. **Input validation** – Tenant requests are validated for email format, URL format (website), tenancy type, and field length limits. Trust registry logo/website URLs must be valid http/https.
+
 ### Reporting a Vulnerability
 
 If you discover a security issue, please report it responsibly rather than opening a public issue.

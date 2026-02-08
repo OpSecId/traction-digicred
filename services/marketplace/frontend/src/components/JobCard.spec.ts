@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import JobCard from './JobCard.vue';
-import type { JobWithEmployer } from '@/types/demo';
+import type { JobWithEmployer } from '@/api/jobs';
 
 const mockJob: JobWithEmployer = {
   id: 'job-1',

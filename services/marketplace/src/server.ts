@@ -2,24 +2,26 @@ import 'dotenv/config';
 import { randomBytes, randomUUID } from 'crypto';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import fs from 'fs';
-import yaml from 'js-yaml';
 import { adminController } from './controllers/adminController';
 import { tenancyController } from './controllers/tenancyController';
-import type { TenantRequestInput } from './controllers/tenantController';
-import type { CredentialAnalysisConfig } from './controllers/credentialAnalysisController';
+import type { CredentialAnalysisConfig } from './types';
 import { marketplaceController } from './controllers/marketplaceController';
 import {
   getActionMenuConfig,
   updateActionMenuConfig,
 } from './controllers/actionMenuController';
 import { buildMarketplaceProfileCredential } from './controllers/credentialIssuanceController';
-import { marketplaceBaseUrl } from './config';
-import { marketplaceIssuer } from './config';
+import { marketplaceBaseUrl, marketplaceIssuer, tenantDidWeb, tenantDidWebForShortId } from './config';
 import { buildJobPostingCredential } from './controllers/jobPostingController';
 import { buildEmployerProfileCredential } from './controllers/employerProfileController';
-import { pluginDb } from './controllers/pluginDbController';
+import { createTenant as pluginCreateTenant } from './controllers/pluginDbController';
+import { asyncHandler } from './utils/asyncHandler';
+import { parseJobBody } from './utils/jobBody';
 import { getMongoDb } from './db/mongodb';
 import {
   tenantRequestRepo,
@@ -30,126 +32,156 @@ import {
   credentialAnalysisConfigRepo,
   invitationRepo,
 } from './repositories/mongo';
+import {
+  createSession,
+  getSession,
+  destroySession,
+  createInnkeeperSession,
+  getInnkeeperSession,
+  destroyInnkeeperSession,
+  SESSION_COOKIE,
+  INNKEEPER_COOKIE,
+  isSessionEnabled,
+} from './sessionStore';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5174;
 
+/** Normalize route param to string (Express can type as string | string[]). */
+function param(req: express.Request, name: string): string {
+  const v = req.params[name];
+  return (Array.isArray(v) ? v[0] : v) ?? '';
+}
+
+/** Normalize query param to string. */
+function query(req: express.Request, name: string): string {
+  const v = req.query[name];
+  if (typeof v === 'string') return v;
+  if (Array.isArray(v) && typeof v[0] === 'string') return v[0];
+  return '';
+}
+
 // CORS: set CORS_ORIGIN env (comma-separated) to restrict origins in production
 const corsOrigin = process.env.CORS_ORIGIN;
 app.use(
-  cors(
-    corsOrigin
-      ? { origin: corsOrigin.split(',').map((o) => o.trim()) }
-      : { origin: true }
-  )
+  cors({
+    origin: corsOrigin ? corsOrigin.split(',').map((o) => o.trim()) : true,
+    credentials: true,
+  })
 );
-app.use(express.json());
+app.use(helmet({ contentSecurityPolicy: false })); // CSP disabled; enable and configure for production
+app.use(cookieParser());
+app.use(express.json({ limit: '100kb' }));
 
-function loadDemoConfig(): unknown {
-  const candidates = [
-    path.join(__dirname, '../config/demo.yaml'),
-    path.join(process.cwd(), 'config/demo.yaml'),
-    path.join(__dirname, '../frontend/public/demo.json'),
-    path.join(process.cwd(), 'frontend/public/demo.json'),
+// Rate limiters
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 15, // 15 attempts per window per IP
+  message: { error: 'Too many login attempts. Try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const formLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30, // 30 submissions per 15 min
+  message: { error: 'Too many requests. Try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const ADDITIONS_PATH = 'config/trust-registry-additions.json';
+
+/** Simple email format validation */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_STRING = 500;
+const VALID_TENANCY_TYPES = ['Employer', 'Scholarship Admin', 'Education Institution', 'Government Service'];
+
+function validateTenantRequest(body: Record<string, unknown>): string | null {
+  if (!body?.tenancyType || typeof body.tenancyType !== 'string' || !body.tenancyType.trim()) {
+    return 'tenancyType is required';
+  }
+  if (!VALID_TENANCY_TYPES.includes(body.tenancyType.trim())) {
+    return 'tenancyType must be one of: ' + VALID_TENANCY_TYPES.join(', ');
+  }
+  if (!body?.name || typeof body.name !== 'string' || !body.name.trim()) {
+    return 'name is required';
+  }
+  if (body.name.length > MAX_STRING) return 'name is too long';
+  if (!body?.email || typeof body.email !== 'string' || !body.email.trim()) {
+    return 'email is required';
+  }
+  if (!EMAIL_REGEX.test(body.email.trim())) return 'email format is invalid';
+  if (body.email.length > 254) return 'email is too long';
+  const strFields: Array<[string, number]> = [
+    ['contactName', 200], ['contactTitle', 200], ['contactPhone', 50], ['registrationId', 100],
+    ['jurisdiction', 200], ['businessAddress', 500], ['website', 500], ['industry', 200], ['intendedUse', 2000],
   ];
-  for (const p of candidates) {
-    try {
-      if (fs.existsSync(p)) {
-        const contents = fs.readFileSync(p, 'utf8');
-        return p.endsWith('.json') ? JSON.parse(contents) : yaml.load(contents);
-      }
-    } catch {
-      continue;
+  for (const [f, max] of strFields) {
+    const v = body[f];
+    if (v != null && typeof v === 'string' && v.length > max) {
+      return `${f} is too long`;
     }
   }
-  throw new Error(`Demo config not found. Tried: ${candidates.join(', ')}`);
+  if (body.website != null && typeof body.website === 'string' && body.website.trim()) {
+    try {
+      const u = new URL(body.website.trim());
+      if (!['http:', 'https:'].includes(u.protocol)) return 'website must use http or https';
+    } catch {
+      return 'website must be a valid URL';
+    }
+  }
+  return null;
+}
+
+function getAdditionsPath(): string {
+  return path.join(process.cwd(), ADDITIONS_PATH);
+}
+
+function loadTrustRegistryAdditions(): unknown[] {
+  const p = getAdditionsPath();
+  try {
+    if (fs.existsSync(p)) {
+      const contents = fs.readFileSync(p, 'utf8');
+      const data = JSON.parse(contents) as { additions?: unknown[] };
+      return data.additions ?? [];
+    }
+  } catch {
+    /* ignore */
+  }
+  return [];
+}
+
+function saveTrustRegistryAdditions(additions: unknown[]): void {
+  const p = getAdditionsPath();
+  const dir = path.dirname(p);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(p, JSON.stringify({ additions }, null, 2), 'utf8');
 }
 
 function loadTrustRegistry(): unknown {
-  const candidates = [
-    path.join(__dirname, '../config/trust-registry.yaml'),
-    path.join(process.cwd(), 'config/trust-registry.yaml'),
-  ];
-  for (const p of candidates) {
-    try {
-      if (fs.existsSync(p)) {
-        const contents = fs.readFileSync(p, 'utf8');
-        const data = yaml.load(contents) as { registries?: unknown[] };
-        return { registries: data.registries ?? [] };
-      }
-    } catch {
-      continue;
-    }
-  }
-  return { registries: [] };
+  const additions = loadTrustRegistryAdditions();
+  return { registries: additions };
 }
 
 // Agent status (for health checks / ops)
-app.get('/api/agents/admin/status', async (_req, res) => {
-  try {
-    const status = await adminController.status();
-    res.json(status);
-  } catch (err) {
-    console.error('Admin agent status error:', err);
-    res.status(500).json({ error: 'Failed to check admin agent status' });
-  }
-});
+app.get('/api/agents/admin/status', asyncHandler(async (_req, res) => {
+  res.json(await adminController.status());
+}));
+app.get('/api/agents/tenancy/status', asyncHandler(async (_req, res) => {
+  res.json(await tenancyController.status());
+}));
+app.get('/api/mongo/status', asyncHandler(async (_req, res) => {
+  const db = await getMongoDb();
+  await db.command({ ping: 1 });
+  res.json({ ok: true, database: db.databaseName });
+}));
 
-app.get('/api/agents/tenancy/status', async (_req, res) => {
-  try {
-    const status = await tenancyController.status();
-    res.json(status);
-  } catch (err) {
-    console.error('Tenancy agent status error:', err);
-    res.status(500).json({ error: 'Failed to check tenancy agent status' });
-  }
-});
-
-// MongoDB status (for health checks / ops)
-app.get('/api/mongo/status', async (_req, res) => {
-  try {
-    const db = await getMongoDb();
-    await db.command({ ping: 1 });
-    res.json({ ok: true, database: db.databaseName });
-  } catch (err) {
-    console.error('MongoDB status error:', err);
-    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : 'Connection failed' });
-  }
-});
-
-// Employer login (validates against employerLogins in config)
-app.post('/api/auth/employer-login', (req, res) => {
-  try {
-    const { email, password } = req.body as { email?: string; password?: string };
-    if (!email || !password) {
-      res.status(400).json({ error: 'Email and password are required' });
-      return;
-    }
-    const config = loadDemoConfig() as {
-      employerLogins?: Array<{ employerId: string; email: string; password: string }>;
-    };
-    const logins = config.employerLogins ?? [];
-    const match = logins.find(
-      (l) => l.email.toLowerCase() === String(email).toLowerCase().trim() && l.password === password
-    );
-    if (!match) {
-      res.status(401).json({ error: 'Invalid email or password' });
-      return;
-    }
-    const personas = (config as { personas?: Array<{ id: string; name: string }> }).personas ?? [];
-    const employer = personas.find((p) => p.id === match.employerId);
-    res.json({
-      employerId: match.employerId,
-      employerName: employer?.name ?? 'Employer',
-    });
-  } catch (err) {
-    console.error('Employer login error:', err);
-    res.status(500).json({ error: 'Login failed' });
-  }
-});
+// Employer login: removed - use /api/auth/tenant-login with email + API key for employer tenants
 
 // Tenant login (approved reservations: email + API key)
-app.post('/api/auth/tenant-login', async (req, res) => {
+app.post('/api/auth/tenant-login', authLimiter, async (req, res) => {
   try {
     const { email, apiKey } = req.body as { email?: string; apiKey?: string };
     if (!email || !apiKey) {
@@ -164,9 +196,24 @@ app.post('/api/auth/tenant-login', async (req, res) => {
     const cred = tenant.credential as Record<string, unknown> | undefined;
     const subj = cred?.credentialSubject as Record<string, unknown> | undefined;
     const name = (subj?.name as string) ?? 'Tenant';
+    const employerId = String(tenant.id ?? '');
+    const employerName = name;
+
+    if (isSessionEnabled()) {
+      const sessionId = await createSession({ employerId, employerName });
+      const isSecure = process.env.NODE_ENV === 'production';
+      res.cookie(SESSION_COOKIE, sessionId, {
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: isSecure ? 'strict' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/',
+      });
+    }
+
     res.json({
-      employerId: tenant.id,
-      employerName: name,
+      employerId,
+      employerName,
     });
   } catch (err) {
     console.error('Tenant login error:', err);
@@ -174,279 +221,213 @@ app.post('/api/auth/tenant-login', async (req, res) => {
   }
 });
 
-// Innkeeper login (validates against innkeeperLogins or adminLogins in config)
-function handleInnkeeperLogin(req: import('express').Request, res: import('express').Response) {
-  console.log('Innkeeper login request received');
+// Tenant session (restore session on page load)
+app.get('/api/auth/tenant-session', asyncHandler(async (req, res) => {
+  if (!isSessionEnabled()) {
+    res.json({ employerId: null, employerName: null });
+    return;
+  }
+  const sessionId = req.cookies?.[SESSION_COOKIE] as string | undefined;
+  if (!sessionId || typeof sessionId !== 'string') {
+    res.json({ employerId: null, employerName: null });
+    return;
+  }
+  const session = await getSession(sessionId);
+  if (!session) {
+    res.clearCookie(SESSION_COOKIE, { path: '/' });
+    res.json({ employerId: null, employerName: null });
+    return;
+  }
+  res.json({
+    employerId: session.employerId,
+    employerName: session.employerName,
+  });
+}));
+
+// Tenant logout
+app.post('/api/auth/tenant-logout', asyncHandler(async (req, res) => {
+  const sessionId = req.cookies?.[SESSION_COOKIE] as string | undefined;
+  if (sessionId && typeof sessionId === 'string') {
+    await destroySession(sessionId);
+  }
+  res.clearCookie(SESSION_COOKIE, { path: '/' });
+  res.json({ success: true });
+}));
+
+// Innkeeper login (validates against INNKEEPER_EMAIL, INNKEEPER_PASSWORD env vars)
+async function handleInnkeeperLogin(req: import('express').Request, res: import('express').Response) {
   try {
     const { email, password } = req.body as { email?: string; password?: string };
     if (!email || !password) {
       res.status(400).json({ error: 'Email and password are required' });
       return;
     }
-    const config = loadDemoConfig() as {
-      innkeeperLogins?: Array<{ email: string; password: string }>;
-      adminLogins?: Array<{ email: string; password: string }>;
-    };
-    const logins = config.innkeeperLogins ?? config.adminLogins ?? [];
-    if (logins.length === 0) {
-      console.warn('Innkeeper login: no innkeeperLogins in config');
+    const envEmail = process.env.INNKEEPER_EMAIL;
+    const envPassword = process.env.INNKEEPER_PASSWORD;
+    if (!envEmail || !envPassword) {
+      res.status(503).json({ error: 'Innkeeper login not configured. Set INNKEEPER_EMAIL and INNKEEPER_PASSWORD.' });
+      return;
     }
-    const match = logins.find(
-      (l) => l.email.toLowerCase() === String(email).toLowerCase().trim() && l.password === password
-    );
-    if (!match) {
-      console.warn('Innkeeper login failed: no match for', email);
+    if (email.toLowerCase().trim() !== envEmail.toLowerCase() || password !== envPassword) {
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
-    console.log('Innkeeper login success:', email);
+    if (isSessionEnabled()) {
+      const sessionId = await createInnkeeperSession();
+      const isSecure = process.env.NODE_ENV === 'production';
+      res.cookie(INNKEEPER_COOKIE, sessionId, {
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: isSecure ? 'strict' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/',
+      });
+    }
     res.json({ success: true });
   } catch (err) {
     console.error('Innkeeper login error:', err);
     res.status(500).json({ error: 'Login failed' });
   }
 }
-app.post('/api/auth/innkeeper-login', handleInnkeeperLogin);
-app.post('/api/auth/admin-login', handleInnkeeperLogin); // backward compatibility
+app.post('/api/auth/innkeeper-login', authLimiter, handleInnkeeperLogin);
 
-// Serve demo config from YAML or JSON fallback
-app.get('/api/config/demo', (_req, res) => {
-  try {
-    const config = loadDemoConfig();
-    res.json(config);
-  } catch (err) {
-    console.error('Error loading demo config:', err);
-    res.status(500).json({ error: 'Failed to load demo configuration' });
+// Innkeeper session (restore session on page load)
+app.get('/api/auth/innkeeper-session', asyncHandler(async (req, res) => {
+  if (!isSessionEnabled()) {
+    res.json({ isAdmin: false });
+    return;
   }
-});
+  const sessionId = req.cookies?.[INNKEEPER_COOKIE] as string | undefined;
+  if (!sessionId || typeof sessionId !== 'string') {
+    res.json({ isAdmin: false });
+    return;
+  }
+  const session = await getInnkeeperSession(sessionId);
+  if (!session) {
+    res.clearCookie(INNKEEPER_COOKIE, { path: '/' });
+    res.json({ isAdmin: false });
+    return;
+  }
+  res.json({ isAdmin: true });
+}));
 
-// Get credentials for presentation request (demo: student's transcript-type credentials only)
-// Filters by action menu's presentationRequestCredentialTypes when configured
+// Innkeeper logout
+app.post('/api/auth/innkeeper-logout', asyncHandler(async (req, res) => {
+  const sessionId = req.cookies?.[INNKEEPER_COOKIE] as string | undefined;
+  if (sessionId && typeof sessionId === 'string') {
+    await destroyInnkeeperSession(sessionId);
+  }
+  res.clearCookie(INNKEEPER_COOKIE, { path: '/' });
+  res.json({ success: true });
+}));
+app.post('/api/auth/admin-login', authLimiter, handleInnkeeperLogin); // backward compatibility
+
+// Get credentials for presentation request (empty - holders use wallet credentials)
 app.get('/api/presentation-request/credentials', (_req, res) => {
-  try {
-    const actionMenu = getActionMenuConfig();
-    const allowedTypes =
-      actionMenu.presentationRequestCredentialTypes?.length
-        ? new Set(actionMenu.presentationRequestCredentialTypes)
-        : null;
-    const config = loadDemoConfig() as {
-      personas: Array<{
-        type: string;
-        credentials?: Array<{
-          id: string;
-          type: string;
-          name: string;
-          establishmentName?: string;
-          image?: string;
-          logo?: string;
-          credentialSubject?: unknown;
-        }>;
-      }>;
-    };
-    const student = (config.personas || []).find((p) => p.type === 'Student');
-    const raw = (student?.credentials || []).filter((c) => {
-      if (!c.type) return false;
-      if (allowedTypes) return allowedTypes.has(c.type);
-      return c.type.toLowerCase().includes('transcript');
-    });
-    const credentials = raw.map((c) => ({
-      id: c.id,
-      type: c.type,
-      name: c.name,
-      establishmentName: c.establishmentName,
-      backgroundImage: c.image,
-      logo: c.logo,
-      credentialSubject: c.credentialSubject,
-    }));
-    res.json({ credentials });
-  } catch (err) {
-    console.error('Error loading credentials:', err);
-    res.status(500).json({ error: 'Failed to load credentials' });
-  }
+  res.json({ credentials: [] });
 });
 
-// Public: check reservation by ID (ReservationCredential lookup – no auth)
-app.get('/api/reservations/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const reservation = await tenantRequestRepo.getById(id);
-    if (!reservation) {
-      res.status(404).json({ error: 'Reservation not found' });
-      return;
-    }
-    res.json(reservation);
-  } catch (err) {
-    console.error('Error fetching reservation:', err);
-    res.status(500).json({ error: 'Failed to fetch reservation' });
-  }
-});
+app.get('/api/reservations/:id', asyncHandler(async (req, res) => {
+  const reservation = await tenantRequestRepo.getById(param(req, 'id'));
+  if (!reservation) res.status(404).json({ error: 'Reservation not found' });
+  else res.json(reservation);
+}));
 
 // Tenant requests - submit for review, list, approve/reject (MongoDB)
-app.post('/api/tenant-requests', async (req, res) => {
-  try {
-    const body = req.body as TenantRequestInput;
-    if (!body?.tenancyType || !body?.name || !body?.email) {
-      res.status(400).json({ error: 'tenancyType, name, and email are required' });
-      return;
-    }
-    const created = await tenantRequestRepo.create(body as unknown as Record<string, unknown>);
-    res.status(201).json(created);
-  } catch (err) {
-    console.error('Error creating tenant request:', err);
-    res.status(500).json({ error: 'Failed to create tenant request' });
+app.post('/api/tenant-requests', formLimiter, asyncHandler(async (req, res) => {
+  const err = validateTenantRequest(req.body as Record<string, unknown>);
+  if (err) {
+    res.status(400).json({ error: err });
+    return;
   }
-});
+  res.status(201).json(await tenantRequestRepo.create(req.body as Record<string, unknown>));
+}));
+app.get('/api/tenant-requests', asyncHandler(async (_req, res) => {
+  res.json({ requests: await tenantRequestRepo.list() });
+}));
 
-app.get('/api/tenant-requests', async (_req, res) => {
-  try {
-    const requests = await tenantRequestRepo.list();
-    res.json({ requests });
-  } catch (err) {
-    console.error('Error listing tenant requests:', err);
-    res.status(500).json({ error: 'Failed to list tenant requests' });
+app.patch('/api/tenant-requests/:id', asyncHandler(async (req, res) => {
+  const id = param(req, 'id');
+  const body = req.body as { status?: 'approved' | 'rejected'; rejectionReason?: string };
+  if (!body?.status || !['approved', 'rejected'].includes(body.status)) {
+    res.status(400).json({ error: 'status must be "approved" or "rejected"' });
+    return;
   }
-});
-
-app.patch('/api/tenant-requests/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const body = req.body as { status?: 'approved' | 'rejected'; rejectionReason?: string };
-    if (!body?.status || !['approved', 'rejected'].includes(body.status)) {
-      res.status(400).json({ error: 'status must be "approved" or "rejected"' });
-      return;
-    }
-    const updated = await tenantRequestRepo.updateStatus(id, body.status, {
-      rejectionReason: body.rejectionReason,
+  const updated = await tenantRequestRepo.updateStatus(id, body.status, { rejectionReason: body.rejectionReason });
+  if (!updated) {
+    res.status(404).json({ error: 'Tenant request not found' });
+    return;
+  }
+  let apiKey: string | undefined;
+  if (body.status === 'approved') {
+    await workflowRepo.create(id, 'verify-tenant');
+    const upd = updated as Record<string, unknown>;
+    const cred = upd.credential as Record<string, unknown> | undefined;
+    const subj = cred?.credentialSubject as Record<string, unknown> | undefined;
+    const underName = subj?.underName as Record<string, unknown> | undefined;
+    const reservationFor = subj?.reservationFor as Record<string, unknown> | undefined;
+    const address = underName?.address as Record<string, unknown> | undefined;
+    const shortId = randomBytes(6).toString('base64url');
+    const tenantSubjectId = tenantDidWebForShortId(shortId);
+    const credentialToStore = buildMarketplaceProfileCredential({
+      id: String(underName?.id ?? upd.id ?? ''),
+      subjectId: tenantSubjectId,
+      name: String(underName?.name ?? ''),
+      email: String(underName?.email ?? ''),
+      tenancyType: String(reservationFor?.tenancyType ?? ''),
+      industry: underName?.industry as string | undefined,
+      website: underName?.url as string | undefined,
+      businessAddress: address?.streetAddress as string | undefined,
     });
-    if (!updated) {
-      res.status(404).json({ error: 'Tenant request not found' });
-      return;
-    }
-    let apiKey: string | undefined;
-    if (body.status === 'approved') {
-      await workflowRepo.create(id, 'verify-tenant');
-      const upd = updated as Record<string, unknown>;
-      const cred = upd.credential as Record<string, unknown> | undefined;
-      const subj = cred?.credentialSubject as Record<string, unknown> | undefined;
-      const underName = subj?.underName as Record<string, unknown> | undefined;
-      const reservationFor = subj?.reservationFor as Record<string, unknown> | undefined;
-      const address = underName?.address as Record<string, unknown> | undefined;
-      const credentialToStore = buildMarketplaceProfileCredential({
-        id: String(underName?.id ?? upd.id ?? ''),
-        name: String(underName?.name ?? ''),
-        email: String(underName?.email ?? ''),
-        tenancyType: String(reservationFor?.tenancyType ?? ''),
-        industry: underName?.industry as string | undefined,
-        website: underName?.url as string | undefined,
-        businessAddress: address?.streetAddress as string | undefined,
-      });
-      // Provision tenant via plugin (creates sub-wallet), then save to MongoDB
-      const tenant = await pluginDb.createTenant(id, { credential: credentialToStore });
-      if (tenant) {
-        await tenantRepo.saveFromPlugin({ ...tenant, credential: credentialToStore });
-        apiKey = randomBytes(24).toString('base64url');
-        await tenantRepo.setApiKey(String(tenant.id), apiKey);
-        // Create employer_profiles for Employer tenants (profile credential created on approval, not first job)
-        if (upd.tenancyType === 'Employer') {
-          await employerProfileRepo.create(String(tenant.id), credentialToStore);
-        }
+    const tenant = await pluginCreateTenant(id, { credential: credentialToStore });
+    if (tenant) {
+      await tenantRepo.saveFromPlugin({ ...tenant, credential: credentialToStore }, shortId);
+      apiKey = randomBytes(24).toString('base64url');
+      await tenantRepo.setApiKey(String(tenant.id), apiKey);
+      if (upd.tenancyType === 'Employer') {
+        await employerProfileRepo.create(String(tenant.id), credentialToStore);
       }
-      console.log('Stored MarketplaceProfileCredential for', underName?.name ?? upd.name);
     }
-    res.json({ ...updated, apiKey });
-  } catch (err) {
-    console.error('Error updating tenant request:', err);
-    res.status(500).json({ error: 'Failed to update tenant request' });
+    console.log('Stored MarketplaceProfileCredential for', underName?.name ?? upd.name);
   }
-});
+  res.json({ ...updated, apiKey });
+}));
 
-// Innkeeper: list tenants (provisioned sub-wallets) - MongoDB
-app.get('/api/innkeeper/tenants', async (_req, res) => {
-  try {
-    const tenants = await tenantRepo.list();
-    res.json({ tenants });
-  } catch (err) {
-    console.error('Error listing tenants:', err);
-    res.status(500).json({ error: 'Failed to list tenants' });
+// Innkeeper: tenants - MongoDB
+app.get('/api/innkeeper/tenants', asyncHandler(async (_req, res) => {
+  res.json({ tenants: await tenantRepo.list() });
+}));
+app.get('/api/innkeeper/tenants/:id', asyncHandler(async (req, res) => {
+  const tenant = await tenantRepo.getById(param(req, 'id'));
+  if (!tenant) {
+    res.status(404).json({ error: 'Tenant not found' });
+    return;
   }
-});
+  const tenantRequest = tenant.tenantRequestId ? await tenantRequestRepo.getById(tenant.tenantRequestId as string) : null;
+  res.json({ tenant, tenantRequest });
+}));
+app.post('/api/innkeeper/tenants/:id/revoke', asyncHandler(async (req, res) => {
+  const ok = await tenantRepo.revoke(param(req, 'id'));
+  if (!ok) res.status(404).json({ error: 'Tenant not found' });
+  else res.json({ revoked: true });
+}));
+app.post('/api/innkeeper/tenants', asyncHandler(async (req, res) => {
+  const b = req.body as { tenantRequestId?: string; did?: string; walletId?: string };
+  const tenant = await tenantRepo.createManual({
+    tenantRequestId: b.tenantRequestId?.trim() || undefined,
+    did: b.did?.trim() || undefined,
+    walletId: b.walletId?.trim() || undefined,
+  });
+  res.status(201).json(tenant);
+}));
+app.get('/api/innkeeper/credential-analysis', asyncHandler(async (_req, res) => {
+  res.json(await credentialAnalysisConfigRepo.get());
+}));
+app.put('/api/innkeeper/credential-analysis', asyncHandler(async (req, res) => {
+  res.json(await credentialAnalysisConfigRepo.update(req.body as Record<string, unknown>));
+}));
 
-// Innkeeper: get tenant details (with request info and credential) - MongoDB
-app.get('/api/innkeeper/tenants/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const tenant = await tenantRepo.getById(id);
-    if (!tenant) {
-      res.status(404).json({ error: 'Tenant not found' });
-      return;
-    }
-    let tenantRequest = null;
-    const tenantRequestId = tenant.tenantRequestId as string | undefined;
-    if (tenantRequestId) {
-      tenantRequest = await tenantRequestRepo.getById(tenantRequestId);
-    }
-    res.json({ tenant, tenantRequest });
-  } catch (err) {
-    console.error('Error fetching tenant:', err);
-    res.status(500).json({ error: 'Failed to fetch tenant' });
-  }
-});
-
-// Innkeeper: revoke tenant access - MongoDB
-app.post('/api/innkeeper/tenants/:id/revoke', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const ok = await tenantRepo.revoke(id);
-    if (!ok) {
-      res.status(404).json({ error: 'Tenant not found' });
-      return;
-    }
-    res.json({ revoked: true });
-  } catch (err) {
-    console.error('Error revoking tenant:', err);
-    res.status(500).json({ error: 'Failed to revoke tenant' });
-  }
-});
-
-// Innkeeper: create tenant (out-of-band onboarding) - MongoDB
-app.post('/api/innkeeper/tenants', async (req, res) => {
-  try {
-    const body = req.body as { tenantRequestId?: string; did?: string; walletId?: string };
-    const tenant = await tenantRepo.createManual({
-      tenantRequestId: body.tenantRequestId?.trim() || undefined,
-      did: body.did?.trim() || undefined,
-      walletId: body.walletId?.trim() || undefined,
-    });
-    res.status(201).json(tenant);
-  } catch (err) {
-    console.error('Error creating tenant:', err);
-    res.status(500).json({ error: 'Failed to create tenant' });
-  }
-});
-
-// Innkeeper: credential analysis workflow config - MongoDB
-app.get('/api/innkeeper/credential-analysis', async (_req, res) => {
-  try {
-    const config = await credentialAnalysisConfigRepo.get();
-    res.json(config);
-  } catch (err) {
-    console.error('Error loading credential analysis config:', err);
-    res.status(500).json({ error: 'Failed to load credential analysis config' });
-  }
-});
-
-app.put('/api/innkeeper/credential-analysis', async (req, res) => {
-  try {
-    const body = req.body as Partial<CredentialAnalysisConfig>;
-    const config = await credentialAnalysisConfigRepo.update(body as Record<string, unknown>);
-    res.json(config);
-  } catch (err) {
-    console.error('Error updating credential analysis config:', err);
-    res.status(500).json({ error: 'Failed to update credential analysis config' });
-  }
-});
-
-// Innkeeper: list trust registries (from config)
+// Innkeeper: list trust registries (from config + additions)
 app.get('/api/innkeeper/trust-registries', (_req, res) => {
   try {
     const registry = loadTrustRegistry() as { registries?: unknown[] };
@@ -457,32 +438,70 @@ app.get('/api/innkeeper/trust-registries', (_req, res) => {
   }
 });
 
-// Innkeeper: list workflow instances - MongoDB
-app.get('/api/innkeeper/workflows', async (_req, res) => {
+function isValidUrl(s: string): boolean {
   try {
-    const workflows = await workflowRepo.list();
-    res.json({ workflows });
+    const u = new URL(s);
+    return ['http:', 'https:'].includes(u.protocol);
+  } catch {
+    return false;
+  }
+}
+
+// Innkeeper: add trust registry entry (saved to config/trust-registry-additions.json)
+app.post('/api/innkeeper/trust-registries', (req, res) => {
+  try {
+    const body = req.body as { name?: string; type?: string; did?: string; credentialTypes?: string[]; logo?: string; website?: string };
+    if (!body?.name || typeof body.name !== 'string' || !body.name.trim()) {
+      res.status(400).json({ error: 'name is required' });
+      return;
+    }
+    const did = body.did && typeof body.did === 'string' ? body.did.trim() : '';
+    if (!did) {
+      res.status(400).json({ error: 'did is required' });
+      return;
+    }
+    const logo = body.logo && typeof body.logo === 'string' ? body.logo.trim() : '';
+    if (logo && !isValidUrl(logo)) {
+      res.status(400).json({ error: 'logo must be a valid http or https URL' });
+      return;
+    }
+    const website = body.website && typeof body.website === 'string' ? body.website.trim() : '';
+    if (website && !isValidUrl(website)) {
+      res.status(400).json({ error: 'website must be a valid http or https URL' });
+      return;
+    }
+    const type = (body.type && typeof body.type === 'string' ? body.type.trim() : 'EducationInstitution') || 'EducationInstitution';
+    const credentialTypes = Array.isArray(body.credentialTypes) ? body.credentialTypes : [];
+    const entry = {
+      id: did,
+      name: body.name.trim(),
+      type,
+      did,
+      ...(credentialTypes.length ? { credentialTypes } : {}),
+      ...(logo ? { logo } : {}),
+      ...(website ? { website } : {}),
+    };
+    const additions = loadTrustRegistryAdditions();
+    additions.push(entry);
+    saveTrustRegistryAdditions(additions);
+    res.status(201).json(entry);
   } catch (err) {
-    console.error('Error listing workflows:', err);
-    res.status(500).json({ error: 'Failed to list workflows' });
+    console.error('Error adding trust registry entry:', err);
+    res.status(500).json({ error: 'Failed to add trust registry entry' });
   }
 });
 
-// Innkeeper: create workflow instance (e.g. trigger tenant provisioning) - MongoDB
-app.post('/api/innkeeper/workflows', async (req, res) => {
-  try {
-    const { tenantRequestId, workflowType } = req.body as { tenantRequestId?: string; workflowType?: string };
-    if (!tenantRequestId || !workflowType) {
-      res.status(400).json({ error: 'tenantRequestId and workflowType are required' });
-      return;
-    }
-    const workflow = await workflowRepo.create(tenantRequestId, workflowType);
-    res.status(201).json(workflow);
-  } catch (err) {
-    console.error('Error creating workflow:', err);
-    res.status(500).json({ error: 'Failed to create workflow' });
+app.get('/api/innkeeper/workflows', asyncHandler(async (_req, res) => {
+  res.json({ workflows: await workflowRepo.list() });
+}));
+app.post('/api/innkeeper/workflows', asyncHandler(async (req, res) => {
+  const { tenantRequestId, workflowType } = req.body as { tenantRequestId?: string; workflowType?: string };
+  if (!tenantRequestId || !workflowType) {
+    res.status(400).json({ error: 'tenantRequestId and workflowType are required' });
+    return;
   }
-});
+  res.status(201).json(await workflowRepo.create(tenantRequestId, workflowType));
+}));
 
 // Derive base URL from request (Origin/Referer) or config — so invitation links use the frontend's port
 function getInvitationBaseUrl(req: express.Request): string {
@@ -608,6 +627,59 @@ app.get('/api/oob/:id', async (req, res) => {
   }
 });
 
+// Transcript skills analysis (proxies to transcript-skills-analysis lambda via API Gateway)
+const TRANSCRIPT_SKILLS_ANALYSIS_URL = process.env.TRANSCRIPT_SKILLS_ANALYSIS_URL;
+app.post('/api/innkeeper/transcript-skills-analysis', async (req, res) => {
+  try {
+    const body = req.body as { coursesList?: Array<[string, string]> };
+    if (!body?.coursesList || !Array.isArray(body.coursesList)) {
+      res.status(400).json({ error: 'coursesList is required and must be an array of [title, code] pairs' });
+      return;
+    }
+    if (!TRANSCRIPT_SKILLS_ANALYSIS_URL) {
+      // Demo response for development when lambda URL is not configured
+      const courseIds = body.coursesList.map(([, code]) => code);
+      const mockResponse = {
+        count: String(Math.min(courseIds.length * 2, 6)),
+        skills_of_interest: [
+          { name: 'Critical Thinking', category: 'Cognitive', pathways: 'Consider majors in philosophy, law, or data science. Pursue certifications in logical reasoning.', count: 2, max_skill_level: 2 },
+          { name: 'Written Communication', category: 'Communication', pathways: 'Explore English, journalism, or marketing. Develop skills through professional writing courses.', count: 2, max_skill_level: 3 },
+          { name: 'Research', category: 'Academic', pathways: 'Pursue graduate studies or roles in libraries and think tanks. Build experience through internships.', count: 1, max_skill_level: 2 },
+        ],
+        skill_level_counts: [1, 2, 1],
+        summary: 'Your transcript reflects strong analytical and communication skills. These competencies will support your goals in further education and career.',
+        course_ids: courseIds,
+      };
+      res.json(mockResponse);
+      return;
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+    const proxyRes = await fetch(TRANSCRIPT_SKILLS_ANALYSIS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ coursesList: body.coursesList }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const data = (await proxyRes.json()) as { status?: number; body?: unknown; statusCode?: number } | unknown;
+    if (!proxyRes.ok) {
+      const errBody = typeof data === 'object' && data && 'body' in data
+        ? (data as { body: unknown }).body
+        : data;
+      const errPayload = typeof errBody === 'string' ? (() => { try { return JSON.parse(errBody); } catch { return { error: errBody }; } })() : errBody;
+      res.status(proxyRes.status).json(errPayload);
+      return;
+    }
+    const rawBody = typeof data === 'object' && data && 'body' in data ? (data as { body: unknown }).body : data;
+    const payload = typeof rawBody === 'string' ? JSON.parse(rawBody) as Record<string, unknown> : rawBody;
+    res.json(payload);
+  } catch (err) {
+    console.error('Transcript skills analysis error:', err);
+    res.status(500).json({ error: 'Failed to analyze transcript skills' });
+  }
+});
+
 // Marketplace plugin: analyze transcript (proxies to ACA-Py agent)
 app.post('/api/innkeeper/marketplace/analyze-transcript', async (req, res) => {
   try {
@@ -652,187 +724,177 @@ app.put('/api/innkeeper/marketplace/action-menu', (req, res) => {
 });
 
 // Employer: create job posting (with JobPostingCredential, no proof) - MongoDB
-app.post('/api/employer/jobs', async (req, res) => {
-  try {
-    const body = req.body as Record<string, unknown> & { employerId?: string; employerName?: string };
-    if (!body?.employerId || !body?.employerName || !body?.title || !body?.description) {
-      res.status(400).json({ error: 'employerId, employerName, title, and description are required' });
-      return;
-    }
-    // Ensure employer profile exists (MongoDB)
-    const profileCred = buildEmployerProfileCredential({
-      employerId: body.employerId,
-      employerName: body.employerName,
-      employerEmail: typeof body.employerEmail === 'string' ? body.employerEmail : undefined,
-      industry: typeof body.employerIndustry === 'string' ? body.employerIndustry : undefined,
-      website: typeof body.employerWebsite === 'string' ? body.employerWebsite : undefined,
-    });
-    await employerProfileRepo.ensure(body.employerId, profileCred);
-    // Build job credential and create in MongoDB
-    const jobId = `urn:uuid:${randomUUID()}`;
-    const credential = buildJobPostingCredential(jobId, {
-      employerId: body.employerId,
-      employerName: body.employerName,
-      employerEmail: typeof body.employerEmail === 'string' ? body.employerEmail : undefined,
-      employerIndustry: typeof body.employerIndustry === 'string' ? body.employerIndustry : undefined,
-      employerWebsite: typeof body.employerWebsite === 'string' ? body.employerWebsite : undefined,
-      title: String(body.title),
-      description: String(body.description),
-      employmentType: typeof body.employmentType === 'string' ? body.employmentType : undefined,
-      locationCity: typeof body.locationCity === 'string' ? body.locationCity : undefined,
-      locationRegion: typeof body.locationRegion === 'string' ? body.locationRegion : undefined,
-      locationCountry: typeof body.locationCountry === 'string' ? body.locationCountry : undefined,
-      locationType: typeof body.locationType === 'string' ? body.locationType : undefined,
-      salaryMin: typeof body.salaryMin === 'number' ? body.salaryMin : undefined,
-      salaryMax: typeof body.salaryMax === 'number' ? body.salaryMax : undefined,
-      salaryCurrency: typeof body.salaryCurrency === 'string' ? body.salaryCurrency : undefined,
-      salaryDisplay: typeof body.salaryDisplay === 'string' ? body.salaryDisplay : undefined,
-      skills: Array.isArray(body.skills) ? body.skills : undefined,
-      qualifications: Array.isArray(body.qualifications) ? body.qualifications : undefined,
-      benefits: typeof body.benefits === 'string' ? body.benefits : undefined,
-      industry: typeof body.industry === 'string' ? body.industry : undefined,
-      validThrough: typeof body.validThrough === 'string' ? body.validThrough : undefined,
-    });
-    const job = await jobPostingRepo.create({
-      id: jobId,
-      employerId: body.employerId,
-      employerName: body.employerName,
-      title: String(body.title).trim(),
-      description: String(body.description).trim(),
-      employerEmail: body.employerEmail,
-      employerIndustry: body.employerIndustry,
-      employerWebsite: body.employerWebsite,
-      employmentType: body.employmentType,
-      locationCity: body.locationCity,
-      locationRegion: body.locationRegion,
-      locationCountry: body.locationCountry,
-      locationType: body.locationType,
-      salaryMin: body.salaryMin,
-      salaryMax: body.salaryMax,
-      salaryCurrency: body.salaryCurrency,
-      salaryDisplay: body.salaryDisplay,
-      skills: body.skills,
-      qualifications: body.qualifications,
-      benefits: body.benefits,
-      industry: body.industry,
-      validThrough: body.validThrough,
-      credential,
-    });
-    res.status(201).json(job);
-  } catch (err) {
-    console.error('Error creating job posting:', err);
-    res.status(500).json({ error: 'Failed to create job posting' });
+app.post('/api/employer/jobs', asyncHandler(async (req, res) => {
+  const body = req.body as Record<string, unknown>;
+  if (!body?.employerId || !body?.employerName || !body?.title || !body?.description) {
+    res.status(400).json({ error: 'employerId, employerName, title, and description are required' });
+    return;
   }
+  const input = parseJobBody(body);
+  const tenant = await tenantRepo.getById(input.employerId);
+  const shortId = tenant?.shortId as string | undefined;
+  const tenantSubjectId = shortId ? tenantDidWebForShortId(shortId) : undefined;
+  const profileCred = buildEmployerProfileCredential({
+    ...input,
+    website: input.employerWebsite,
+    industry: input.employerIndustry,
+    subjectId: tenantSubjectId,
+  });
+  await employerProfileRepo.ensure(input.employerId, profileCred);
+  const profile = await employerProfileRepo.get(input.employerId);
+  const cred = profile?.credential as { credentialSubject?: { name?: string; image?: string; url?: string } } | undefined;
+  const subj = cred?.credentialSubject ?? {};
+  const employerWebsite = input.employerWebsite ?? subj.url;
+  const inputWithWebsite = { ...input, employerWebsite };
+  const issuer = {
+    id: (tenant?.did as string) ?? tenantDidWeb(input.employerId),
+    name: input.employerName,
+    description: input.employerIndustry
+      ? `${input.employerName} – ${input.employerIndustry}`
+      : undefined,
+    image: (subj.image as string) ?? undefined,
+  };
+  const jobId = `urn:uuid:${randomUUID()}`;
+  const credential = buildJobPostingCredential(jobId, inputWithWebsite, issuer);
+  const job = await jobPostingRepo.create({
+    id: jobId,
+    employerId: input.employerId,
+    employerName: input.employerName,
+    title: input.title.trim(),
+    description: input.description.trim(),
+    employerEmail: input.employerEmail,
+    employerIndustry: input.employerIndustry,
+    employerWebsite: input.employerWebsite,
+    employmentType: input.employmentType,
+    locationCity: input.locationCity,
+    locationRegion: input.locationRegion,
+    locationCountry: input.locationCountry,
+    locationType: input.locationType,
+    salaryMin: input.salaryMin,
+    salaryMax: input.salaryMax,
+    salaryCurrency: input.salaryCurrency,
+    salaryDisplay: input.salaryDisplay,
+    skills: input.skills,
+    qualifications: input.qualifications,
+    benefits: input.benefits,
+    industry: input.industry,
+    validThrough: input.validThrough,
+    credential,
+  });
+  res.status(201).json(job);
+}));
+
+app.get('/api/jobs/:id', asyncHandler(async (req, res) => {
+  const job = await jobPostingRepo.getById(param(req, 'id'));
+  if (!job) res.status(404).json({ error: 'Job posting not found' });
+  else res.json(job);
+}));
+app.get('/api/employer/profile', asyncHandler(async (req, res) => {
+  const employerId = query(req, 'employerId');
+  if (!employerId) {
+    res.status(400).json({ error: 'employerId query parameter is required' });
+    return;
+  }
+  const profile = await employerProfileRepo.get(employerId);
+  res.json(profile ?? { employerId, credential: null });
+}));
+app.get('/api/employer/jobs', asyncHandler(async (req, res) => {
+  const employerId = query(req, 'employerId');
+  if (!employerId) {
+    res.status(400).json({ error: 'employerId query parameter is required' });
+    return;
+  }
+  res.json({ jobs: await jobPostingRepo.listByEmployer(employerId) });
+}));
+app.patch('/api/employer/jobs', asyncHandler(async (req, res) => {
+  const jobId = query(req, 'id');
+  const employerId = query(req, 'employerId');
+  if (!jobId || !employerId) {
+    res.status(400).json({ error: 'id and employerId query parameters are required' });
+    return;
+  }
+  const job = await jobPostingRepo.getById(jobId);
+  if (!job) {
+    res.status(404).json({ error: 'Job posting not found' });
+    return;
+  }
+  if ((job.employerId as string) !== employerId) {
+    res.status(403).json({ error: 'Not authorized to update this job' });
+    return;
+  }
+  const body = req.body as Record<string, unknown>;
+  const patch: { visibility?: boolean; status?: string } = {};
+  if (typeof body.visibility === 'boolean') patch.visibility = body.visibility;
+  if (typeof body.status === 'string' && (body.status === 'active' || body.status === 'revoked')) patch.status = body.status;
+  if (Object.keys(patch).length === 0) {
+    res.status(400).json({ error: 'No valid update fields (visibility or status)' });
+    return;
+  }
+  const updated = await jobPostingRepo.update(jobId, patch);
+  res.json(updated);
+}));
+app.get('/api/employer/workflows', asyncHandler(async (req, res) => {
+  const employerId = query(req, 'employerId');
+  if (!employerId) {
+    res.status(400).json({ error: 'employerId query parameter is required' });
+    return;
+  }
+  res.json({ workflows: await workflowRepo.listByEmployerId(employerId) });
+}));
+app.get('/api/jobs', asyncHandler(async (_req, res) => {
+  res.json({ jobs: await jobPostingRepo.listAll() });
+}));
+app.post('/api/recommendations', asyncHandler(async (_req, res) => {
+  const jobs = (await jobPostingRepo.listAll()).slice(0, 8);
+  res.json({ jobs });
+}));
+
+// DID documents (did:web resolution)
+app.get('/.well-known/did.json', (_req, res) => {
+  const base = marketplaceBaseUrl.replace(/\/$/, '');
+  const didDoc = {
+    '@context': ['https://www.w3.org/ns/did/v1'],
+    id: marketplaceIssuer.id,
+    service: [
+      {
+        id: `${marketplaceIssuer.id}#marketplace`,
+        type: 'LinkedDomains',
+        serviceEndpoint: { origins: [base] },
+      },
+    ],
+  };
+  res.setHeader('Content-Type', 'application/did+json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.json(didDoc);
 });
 
-// Get single job posting by id (for JobDetail when not in store) - MongoDB
-app.get('/api/jobs/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const job = await jobPostingRepo.getById(id);
-    if (!job) {
-      res.status(404).json({ error: 'Job posting not found' });
-      return;
-    }
-    res.json(job);
-  } catch (err) {
-    console.error('Error fetching job posting:', err);
-    res.status(500).json({ error: 'Failed to fetch job posting' });
+app.get('/tenants/:shortId/did.json', asyncHandler(async (req, res) => {
+  const shortId = param(req, 'shortId');
+  const tenant = await tenantRepo.getByShortId(shortId);
+  if (!tenant) {
+    res.status(404).json({ error: 'Tenant not found' });
+    return;
   }
-});
-
-// Employer: get profile credential - MongoDB
-// Returns 200 with null credential when profile doesn't exist yet (employer can create first job to establish profile)
-app.get('/api/employer/profile', async (req, res) => {
-  try {
-    const employerId = req.query.employerId as string;
-    if (!employerId) {
-      res.status(400).json({ error: 'employerId query parameter is required' });
-      return;
-    }
-    const profile = await employerProfileRepo.get(employerId);
-    if (!profile) {
-      res.json({ employerId, credential: null });
-      return;
-    }
-    res.json(profile);
-  } catch (err) {
-    console.error('Error fetching employer profile:', err);
-    res.status(500).json({ error: 'Failed to fetch employer profile' });
-  }
-});
-
-// Employer: list job postings by employer - MongoDB
-app.get('/api/employer/jobs', async (req, res) => {
-  try {
-    const employerId = req.query.employerId as string;
-    if (!employerId) {
-      res.status(400).json({ error: 'employerId query parameter is required' });
-      return;
-    }
-    const jobs = await jobPostingRepo.listByEmployer(employerId);
-    res.json({ jobs });
-  } catch (err) {
-    console.error('Error listing job postings:', err);
-    res.status(500).json({ error: 'Failed to list job postings' });
-  }
-});
-
-// Employer: list workflows for employer (tenant provisioning, etc.) - MongoDB
-app.get('/api/employer/workflows', async (req, res) => {
-  try {
-    const employerId = req.query.employerId as string;
-    if (!employerId) {
-      res.status(400).json({ error: 'employerId query parameter is required' });
-      return;
-    }
-    const workflows = await workflowRepo.listByEmployerId(employerId);
-    res.json({ workflows });
-  } catch (err) {
-    console.error('Error listing employer workflows:', err);
-    res.status(500).json({ error: 'Failed to list workflows' });
-  }
-});
-
-// Get recommendations based on transcript/presentation - MongoDB for config
-app.post('/api/recommendations', async (req, res) => {
-  try {
-    const analysisConfig = await credentialAnalysisConfigRepo.get();
-    const config = loadDemoConfig() as {
-      personas: Array<{
-        id: string;
-        type: string;
-        name: string;
-        image?: string;
-        logo?: string;
-        jobPostings: Array<Record<string, unknown>>;
-      }>;
-    };
-    const allJobs: Array<Record<string, unknown>> = [];
-    for (const persona of config.personas || []) {
-      if (persona.type === 'Employer' && persona.jobPostings) {
-        for (const job of persona.jobPostings) {
-          allJobs.push({
-            ...job,
-            employerId: persona.id,
-            employerName: persona.name,
-            employerImage: persona.image,
-            employerLogo: persona.logo,
-          });
-        }
-      }
-    }
-    const featured = allJobs.filter((j) => j.featured);
-    let jobs = featured.length > 0 ? featured : allJobs.slice(0, 8);
-    if (!analysisConfig.enabled) {
-      jobs = allJobs.slice(0, 8);
-    }
-    res.json({ jobs });
-  } catch (err) {
-    console.error('Error getting recommendations:', err);
-    res.status(500).json({ error: 'Failed to get recommendations' });
-  }
-});
+  const tenantDid = tenantDidWebForShortId(shortId);
+  const base = marketplaceBaseUrl.replace(/\/$/, '');
+  const cred = tenant.credential as Record<string, unknown> | undefined;
+  const subj = cred?.credentialSubject as Record<string, unknown> | undefined;
+  const didDoc: Record<string, unknown> = {
+    '@context': ['https://www.w3.org/ns/did/v1'],
+    id: tenantDid,
+    service: [
+      {
+        id: `${tenantDid}#marketplace`,
+        type: 'LinkedDomains',
+        serviceEndpoint: { origins: [base] },
+      },
+    ],
+  };
+  if (subj?.url || subj?.website) didDoc.alsoKnownAs = subj.url ?? subj.website;
+  res.setHeader('Content-Type', 'application/did+json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.json(didDoc);
+}));
 
 // JSON-LD context for marketplace credentials
 app.get('/ns/marketplace/v1', (_req, res) => {
@@ -860,10 +922,12 @@ if (fs.existsSync(frontendDist)) {
   });
 }
 
-async function start() {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Marketplace server running at http://0.0.0.0:${PORT}`);
-  });
-}
+// Global error handler (for asyncHandler and unhandled rejections)
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error(err);
+  res.status(500).json({ error: err.message || 'Internal server error' });
+});
 
-start();
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Marketplace server running at http://0.0.0.0:${PORT}`);
+});

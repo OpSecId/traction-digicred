@@ -2,16 +2,6 @@
  * Backend configuration from environment variables.
  */
 
-export type DbType = 'postgres' | 'sqlite';
-
-export const dbConfig = {
-  type: (process.env.DATABASE_TYPE || 'sqlite').toLowerCase() as DbType,
-  /** PostgreSQL: connection URL, e.g. postgresql://user:pass@localhost:5432/marketplace */
-  url: process.env.DATABASE_URL || '',
-  /** SQLite: path to .db file (default: ./data/marketplace.db) */
-  path: process.env.DATABASE_PATH || './data/marketplace.db',
-};
-
 /** Single multitenant ACA-Py agent (Innkeeper + Marketplace plugins). Admin and tenancy operations use this. */
 export const marketplaceAgencyConfig = {
   uri: process.env.MARKETPLACE_AGENCY_URI || '',
@@ -38,6 +28,19 @@ function didWebFromUrl(url: string): string {
   } catch {
     return 'did:web:localhost';
   }
+}
+
+/** Derive did:web for a tenant (e.g. did:web:marketplace.example.com:tenant:uuid). */
+export function tenantDidWeb(tenantId: string): string {
+  const base = didWebFromUrl(marketplaceBaseUrl);
+  const id = tenantId.replace(/^urn:uuid:/i, '').replace(/^urn:employer:/i, '');
+  return `${base}:tenant:${id}`;
+}
+
+/** Derive did:web for a tenant by short ID (e.g. did:web:marketplace.example.com:tenants:abc123). */
+export function tenantDidWebForShortId(shortId: string): string {
+  const base = didWebFromUrl(marketplaceBaseUrl);
+  return `${base}:tenants:${shortId}`;
 }
 
 /** Credential issuer (marketplace). Object with id (did:web), name, image, description. */

@@ -1,7 +1,7 @@
 <template>
-  <div class="employer-hub">
-    <div class="hub-hero">
-      <h1>Marketplace Tenants Hub</h1>
+  <div class="tenancy-hub" :class="{ 'tenancy-hub--login': !employerStore.isEmployer }">
+    <div v-if="employerStore.isEmployer" class="hub-hero">
+      <h1>Marketplace Hub</h1>
       <p>Manage your publications and applicants</p>
     </div>
 
@@ -30,31 +30,21 @@
       </div>
     </div>
 
-    <div v-if="employerStore.isEmployer" class="employer-dashboard">
-      <!-- Stats -->
-      <div class="stats-row">
-        <div class="stat-card">
-          <i class="pi pi-briefcase stat-icon"></i>
-          <span class="stat-value">{{ jobCount }}</span>
-          <span class="stat-label">Job postings</span>
-        </div>
-        <div class="stat-card">
-          <i class="pi pi-sitemap stat-icon"></i>
-          <span class="stat-value">{{ workflowStats.running }}</span>
-          <span class="stat-label">Workflows in progress</span>
-        </div>
-        <div class="stat-card">
-          <i class="pi pi-check-circle stat-icon"></i>
-          <span class="stat-value">{{ workflowStats.completed }}</span>
-          <span class="stat-label">Workflows completed</span>
-        </div>
-      </div>
-
-      <!-- Profile & Contact -->
-      <div class="marketplace-card employer-profile-card">
+    <div v-if="employerStore.isEmployer" class="tenancy-dashboard">
+      <!-- Profile card (prominent, at top) -->
+      <div class="marketplace-card tenancy-profile-card profile-card-hero">
         <div class="profile-card-header">
           <i class="pi pi-building"></i>
-          <span>Organization</span>
+          <span>My Profile</span>
+          <button
+            type="button"
+            class="view-profile-btn"
+            :disabled="!employerProfile?.credential"
+            @click="showProfileModal = true"
+          >
+            <i class="pi pi-eye"></i>
+            View credential
+          </button>
         </div>
         <div class="profile-card-body">
           <div class="profile-name">{{ profileName }}</div>
@@ -85,7 +75,7 @@
           </router-link>
         </div>
 
-        <div class="employer-actions">
+        <div class="tenancy-actions">
           <router-link to="/tenant/jobs" class="action-btn primary">
             <i class="pi pi-list"></i>
             Manage Jobs
@@ -94,72 +84,129 @@
             <i class="pi pi-sitemap"></i>
             Manage workflows
           </router-link>
-          <button class="action-btn secondary" @click="employerStore.clearEmployer()">
+          <button class="action-btn secondary" @click="handleSignOut">
             Sign out
           </button>
         </div>
       </div>
-    </div>
 
-    <div v-else class="sign-in-section">
-      <div class="marketplace-card login-card">
-        <h4 class="login-title">Sign in</h4>
-        <form class="login-form" @submit.prevent="handleLogin">
-          <div class="form-field">
-            <label for="login-email">Email</label>
-            <input
-              id="login-email"
-              v-model="loginEmail"
-              type="email"
-              required
-              placeholder="you@company.com"
-              autocomplete="email"
-            />
-          </div>
-          <div class="form-field">
-            <label for="login-password">Password or API key</label>
-            <input
-              id="login-password"
-              v-model="loginPassword"
-              type="password"
-              required
-              placeholder="•••••••• or your API key"
-              autocomplete="current-password"
-            />
-          </div>
-          <p v-if="loginError" class="login-error">{{ loginError }}</p>
-          <button type="submit" class="action-btn primary" :disabled="loggingIn">
-            <i v-if="!loggingIn" class="pi pi-sign-in"></i>
-            <i v-else class="pi pi-spin pi-spinner"></i>
-            {{ loggingIn ? 'Signing in...' : 'Sign in' }}
-          </button>
-        </form>
-        <p class="request-tenancy-prompt">
-          Don't have an account?
-          <router-link to="/tenant/onboard" class="request-tenancy-link">Request tenancy</router-link>
-        </p>
-        <p class="check-reservation-prompt">
-          <router-link to="/reservation/check" class="request-tenancy-link">
-            <i class="pi pi-search"></i>
-            Check reservation status
-          </router-link>
-        </p>
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <i class="pi pi-briefcase stat-icon"></i>
+          <span class="stat-value">{{ jobCount }}</span>
+          <span class="stat-label">Job postings</span>
+        </div>
+        <div class="stat-card">
+          <i class="pi pi-sitemap stat-icon"></i>
+          <span class="stat-value">{{ workflowStats.running }}</span>
+          <span class="stat-label">Workflows in progress</span>
+        </div>
+        <div class="stat-card">
+          <i class="pi pi-check-circle stat-icon"></i>
+          <span class="stat-value">{{ workflowStats.completed }}</span>
+          <span class="stat-label">Workflows completed</span>
+        </div>
       </div>
     </div>
+
+    <DetailModalCard
+      v-if="showProfileModal"
+      title="My Profile Credential"
+      :credential="employerProfile?.credential ?? null"
+      credential-title="MarketplaceProfileCredential"
+      @close="showProfileModal = false"
+    >
+      <template #details>
+        <div class="profile-modal-details">
+          <dl class="profile-dl">
+            <dt>Organization</dt>
+            <dd>{{ profileName }}</dd>
+            <dt v-if="profileIndustry">Industry</dt>
+            <dd v-if="profileIndustry">{{ profileIndustry }}</dd>
+            <dt v-if="profileEmail">Email</dt>
+            <dd v-if="profileEmail"><a :href="`mailto:${profileEmail}`">{{ profileEmail }}</a></dd>
+            <dt v-if="profileWebsite">Website</dt>
+            <dd v-if="profileWebsite"><a :href="profileWebsite" target="_blank" rel="noopener noreferrer">{{ profileWebsite }}</a></dd>
+          </dl>
+        </div>
+      </template>
+    </DetailModalCard>
+
+    <LoginLayout
+      v-if="!employerStore.isEmployer"
+      brand-badge="Tenant"
+      brand-badge-icon="pi-building"
+      brand-title="Marketplace Hub"
+      brand-tagline="Manage your publications and applicants"
+      :brand-features="['Publish jobs and opportunities', 'Review applicants with verified credentials', 'Track workflows and outcomes']"
+    >
+      <div class="login-form-header">
+        <h2>Sign in</h2>
+        <p>Enter your tenant email and API key from your approval email</p>
+      </div>
+      <form class="login-form" @submit.prevent="handleLogin">
+        <div class="login-form-field">
+          <label for="login-email">Email</label>
+          <input
+            id="login-email"
+            v-model="loginEmail"
+            type="email"
+            required
+            placeholder="you@company.com"
+            autocomplete="email"
+          />
+        </div>
+        <div class="login-form-field">
+          <label for="login-api-key">API key</label>
+          <input
+            id="login-api-key"
+            v-model="loginPassword"
+            type="password"
+            required
+            placeholder="Paste API key from approval email"
+            autocomplete="off"
+          />
+        </div>
+        <p v-if="loginError" class="login-form-error">
+          <i class="pi pi-exclamation-circle"></i>
+          {{ loginError }}
+        </p>
+        <button type="submit" class="login-submit-btn" :disabled="loggingIn">
+          <i v-if="!loggingIn" class="pi pi-sign-in"></i>
+          <i v-else class="pi pi-spin pi-spinner"></i>
+          {{ loggingIn ? 'Signing in...' : 'Sign in' }}
+        </button>
+      </form>
+      <div class="login-form-footer">
+        <p>
+          Don't have an account?
+          <router-link to="/tenant/onboard">Request tenancy</router-link>
+        </p>
+        <router-link to="/reservation/check" class="secondary">
+          <i class="pi pi-search"></i>
+          Check reservation status
+        </router-link>
+      </div>
+      <router-link to="/" class="login-back-link">
+        <i class="pi pi-arrow-left"></i>
+        Back to marketplace
+      </router-link>
+    </LoginLayout>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useDemoStore } from '@/store/demoStore';
+import LoginLayout from '@/components/LoginLayout.vue';
+import DetailModalCard from '@/components/DetailModalCard.vue';
 import { useEmployerStore } from '@/store/employerStore';
-import { employerLogin, tenantLogin } from '@/api/auth';
+import { tenantLogin, tenantLogout } from '@/api/auth';
 import { getEmployerProfile, listJobPostings, listEmployerWorkflows, profileSubjectFromCredential, emailFromSubject } from '@/api/employerJobs';
 
 const route = useRoute();
 const router = useRouter();
-const demoStore = useDemoStore();
 const employerStore = useEmployerStore();
 
 const loginEmail = ref('');
@@ -167,6 +214,7 @@ const loginPassword = ref('');
 const loggingIn = ref(false);
 const loginError = ref('');
 const copyFeedback = ref(false);
+const showProfileModal = ref(false);
 
 const submittedRef = computed(() => {
   if (route.query.onboarded === '1' && route.query.ref) {
@@ -198,16 +246,7 @@ function closeConfirmationModal() {
   router.replace({ path: '/tenant', query: {} });
 }
 
-const currentEmployer = computed(() => {
-  if (!employerStore.currentEmployerId) return null;
-  return demoStore.getEmployerById(employerStore.currentEmployerId);
-});
-
-const jobCount = computed(() => {
-  if (!employerStore.currentEmployerId) return 0;
-  const demoJobs = demoStore.getJobsByEmployer(employerStore.currentEmployerId).length;
-  return demoJobs + apiJobCount.value;
-});
+const jobCount = computed(() => apiJobCount.value);
 
 const employerProfile = ref<Awaited<ReturnType<typeof getEmployerProfile>>>(null);
 const apiJobCount = ref(0);
@@ -217,8 +256,7 @@ const subject = computed(() => profileSubjectFromCredential(employerProfile.valu
 
 const profileName = computed(() => {
   const name = subject.value.name as string | undefined;
-  if (name) return name;
-  return currentEmployer.value?.name ?? 'Employer';
+  return name ?? 'Employer';
 });
 
 const profileEmail = computed(() => emailFromSubject(subject.value));
@@ -260,22 +298,22 @@ watch(
   { immediate: true }
 );
 
+async function handleSignOut() {
+  try {
+    await tenantLogout();
+  } catch {
+    // Ignore - clear local state anyway
+  }
+  employerStore.clearEmployer();
+}
+
 async function handleLogin() {
   loginError.value = '';
   loggingIn.value = true;
   const email = loginEmail.value.trim();
-  const cred = loginPassword.value;
+  const apiKey = loginPassword.value;
   try {
-    try {
-      const { employerId } = await employerLogin(email, cred);
-      employerStore.setEmployer(employerId);
-      return;
-    } catch (err: unknown) {
-      const status = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { status?: number } }).response?.status : null;
-      if (status !== 401) throw err;
-    }
-    const { employerId } = await tenantLogin(email, cred);
+    const { employerId } = await tenantLogin(email, apiKey);
     employerStore.setEmployer(employerId);
   } catch (err: unknown) {
     const msg =
@@ -293,18 +331,30 @@ async function handleLogin() {
 
 <style scoped lang="scss">
 @use '@/assets/variables.scss' as *;
+@use '@/assets/page-common.scss';
 
-.employer-hub {
+.tenancy-hub {
   padding: 16px 20px 32px;
-  max-width: 560px;
+  max-width: 720px;
   margin: 0 auto;
 
   @media (min-width: $breakpoint-desktop) {
     padding: 24px 32px 48px;
   }
+
+  &.tenancy-hub--login {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
-.employer-dashboard {
+.tenancy-dashboard {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -363,14 +413,22 @@ async function handleLogin() {
   }
 }
 
-.employer-profile-card {
+.tenancy-profile-card {
   padding: 20px;
   margin-bottom: 16px;
+
+  &.profile-card-hero {
+    padding: 24px 28px;
+    border: 2px solid rgba(0, 51, 102, 0.12);
+    box-shadow: 0 4px 20px rgba(0, 51, 102, 0.08);
+    background: linear-gradient(to bottom, rgba(0, 51, 102, 0.02), transparent);
+  }
 
   .profile-card-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 8px 16px;
     font-size: 0.85rem;
     font-weight: 600;
     color: $marketplace-text-muted;
@@ -382,14 +440,40 @@ async function handleLogin() {
       font-size: 1rem;
       color: $marketplace-primary;
     }
+
+    .view-profile-btn {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: $marketplace-primary;
+      background: rgba(0, 51, 102, 0.08);
+      border: 1px solid rgba(0, 51, 102, 0.2);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+
+      &:hover:not(:disabled) {
+        background: rgba(0, 51, 102, 0.14);
+        color: $marketplace-secondary;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
   }
 
   .profile-card-body {
     margin-bottom: 20px;
 
     .profile-name {
-      font-size: 1.2rem;
-      font-weight: 600;
+      font-size: 1.35rem;
+      font-weight: 700;
       color: $marketplace-primary;
       margin-bottom: 8px;
     }
@@ -505,7 +589,7 @@ async function handleLogin() {
     }
   }
 
-  .employer-actions {
+  .tenancy-actions {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -657,102 +741,33 @@ async function handleLogin() {
   to { opacity: 1; }
 }
 
-.sign-in-section {
-  width: 100%;
+.profile-modal-details {
+  padding: 8px 0;
 }
 
-.login-card {
-  padding: 24px;
-  margin-bottom: 0;
+.profile-dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 24px;
+  margin: 0;
 
-  .login-title {
-    font-size: 1.1rem;
+  dt {
     font-weight: 600;
-    color: $marketplace-primary;
-    margin: 0 0 20px 0;
+    color: $marketplace-text-muted;
+    margin: 0;
   }
-}
 
-.login-form {
-  .form-field {
-    margin-bottom: 16px;
+  dd {
+    margin: 0;
 
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 500;
-      margin-bottom: 6px;
-      color: $marketplace-text;
-    }
+    a {
+      color: $marketplace-primary;
+      text-decoration: none;
 
-    input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid $marketplace-panel-border;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      box-sizing: border-box;
-      background: $marketplace-bg-card;
-      transition: border-color 0.2s, box-shadow 0.15s;
-
-      &:focus {
-        outline: none;
-        border-color: $marketplace-primary;
-        box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+      &:hover {
+        text-decoration: underline;
       }
     }
-  }
-
-  .login-error {
-    color: $marketplace-danger;
-    font-size: 0.9rem;
-    margin: 0 0 12px 0;
-  }
-
-  button {
-    width: 100%;
-    margin-top: 8px;
-    padding: 12px 20px;
-    border-radius: 8px;
-
-    &:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-  }
-}
-
-.request-tenancy-prompt {
-  margin: 20px 0 0 0;
-  padding-top: 20px;
-  border-top: 1px solid $marketplace-panel-border;
-  font-size: 0.9rem;
-  color: $marketplace-text-muted;
-  text-align: center;
-}
-
-.check-reservation-prompt {
-  margin: 12px 0 0 0;
-  font-size: 0.9rem;
-  text-align: center;
-
-  a {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-}
-
-.request-tenancy-link {
-  font-weight: 500;
-  color: $marketplace-primary;
-  text-decoration: none;
-  margin-left: 4px;
-  transition: color 0.2s;
-
-  &:hover {
-    color: $marketplace-secondary;
-    text-decoration: underline;
   }
 }
 </style>

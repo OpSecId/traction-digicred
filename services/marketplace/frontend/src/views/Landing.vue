@@ -61,11 +61,54 @@
             <p>Multi-tenant architecture. Secure, isolated, and ready to scale as you grow.</p>
           </article>
         </div>
-        <div
-          v-if="activeInvitation.invitation_url || activeInvitation.qr_url || pwaUrl"
-          class="join-channel-section"
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="cta-container">
+        <h2>Ready to get started?</h2>
+        <p>Request tenancy to join the marketplace. Once approved, you can publish offers and connect with credential holders.</p>
+        <div class="cta-buttons">
+          <router-link to="/holder" class="btn-outline btn-large">
+            <i class="pi pi-user"></i>
+            Student or Job Seeker
+          </router-link>
+          <router-link to="/tenant/onboard" class="btn-primary btn-large">
+            Request tenancy
+          </router-link>
+          <router-link to="/reservation/check" class="btn-outline btn-large">
+            Check on my reservation
+          </router-link>
+          <button
+            v-if="activeInvitation.invitation_url || activeInvitation.qr_url || pwaUrl"
+            type="button"
+            class="btn-outline btn-large btn-connect"
+            @click="showConnectModal = true"
+          >
+            <i class="pi pi-mobile"></i>
+            Connect
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- DigiCred wallet card modal -->
+    <div
+      v-if="showConnectModal && (activeInvitation.invitation_url || activeInvitation.qr_url || pwaUrl)"
+      class="connect-modal-overlay"
+      @click.self="showConnectModal = false"
+    >
+      <div class="connect-modal">
+        <button
+          type="button"
+          class="connect-modal-close"
+          aria-label="Close"
+          @click="showConnectModal = false"
         >
-          <div class="join-channel-card">
+          <i class="pi pi-times"></i>
+        </button>
+        <div class="wallet-card">
+          <div class="wallet-card-header">
             <div class="join-channel-qr-wrap">
               <QrcodeVue
                 v-if="qrValue"
@@ -86,6 +129,16 @@
                 <img :src="appIconUrl" alt="" class="join-channel-qr-icon" />
               </div>
             </div>
+            <div class="wallet-card-title">
+              <h3>DigiCred Wallet</h3>
+              <p>Join the channel with your wallet to browse jobs, scholarships, and opportunities. Connect with employers using your verified credentials.</p>
+              <div class="platform-icons" aria-label="Available on Android and iOS">
+                <i class="pi pi-android" title="Android"></i>
+                <i class="pi pi-apple" title="iOS"></i>
+              </div>
+            </div>
+          </div>
+          <div class="wallet-card-body">
             <div class="join-channel-content">
               <div class="join-channel-toggle">
                 <button
@@ -108,7 +161,7 @@
               </div>
               <p class="join-channel-desc">
                 <template v-if="qrMode === 'didcomm'">
-                  Browse jobs, scholarships, and opportunities. Connect with employers using your verified credentials.
+                  Scan with DigiCred Wallet to join the channel and browse opportunities.
                 </template>
                 <template v-else>
                   Scan to open the app in your browser or add to your home screen.
@@ -139,27 +192,12 @@
           </div>
         </div>
       </div>
-    </section>
-
-    <section class="cta-section">
-      <div class="cta-container">
-        <h2>Ready to get started?</h2>
-        <p>Request tenancy to join the marketplace. Once approved, you can publish offers and connect with credential holders.</p>
-        <div class="cta-buttons">
-          <router-link to="/tenant/onboard" class="btn-primary btn-large">
-            Request tenancy
-          </router-link>
-          <router-link to="/reservation/check" class="btn-outline btn-large">
-            Check on my reservation
-          </router-link>
-        </div>
-      </div>
-    </section>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import QrcodeVue from 'qrcode.vue';
 import { getActiveInvitation } from '@/api/oob';
@@ -167,6 +205,7 @@ import { getAppIconUrl, getAppDomain } from '@/services/configService';
 import { isMobile } from '@/utils/isMobile';
 
 const toast = useToast();
+const showConnectModal = ref(false);
 const activeInvitation = ref<{ invitation_url: string | null; qr_url: string | null }>({
   invitation_url: null,
   qr_url: null,
@@ -212,8 +251,17 @@ function onJoinChannelClick() {
   }
 }
 
+function onEscape(e: KeyboardEvent) {
+  if (e.key === 'Escape') showConnectModal.value = false;
+}
+
 onMounted(async () => {
   activeInvitation.value = await getActiveInvitation();
+  window.addEventListener('keydown', onEscape);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onEscape);
 });
 </script>
 
@@ -341,6 +389,7 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   padding: 14px 24px;
   font-size: 0.95rem;
   font-weight: 500;
@@ -350,6 +399,7 @@ onMounted(async () => {
   border-radius: 10px;
   text-decoration: none;
   transition: background 0.2s, border-color 0.2s;
+  cursor: pointer;
 
   &:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -357,38 +407,146 @@ onMounted(async () => {
   }
 }
 
-/* Join channel section — below Why join? */
-.join-channel-section {
-  margin-top: 2.5rem;
+/* Connect modal */
+.connect-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
   display: flex;
+  align-items: center;
   justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: connect-modal-fade 0.2s ease-out;
 }
 
-.join-channel-card {
+@keyframes connect-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.connect-modal {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  animation: connect-modal-slide 0.25s ease-out;
+}
+
+@keyframes connect-modal-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.connect-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 18px;
-  padding: 12px 22px;
-  width: 600px;
-  min-height: 160px;
-  height: 160px;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: $marketplace-bg;
+  color: $marketplace-text-muted;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    background: $marketplace-panel-border;
+    color: $marketplace-text;
+  }
+
+  i {
+    font-size: 1.25rem;
+  }
+}
+
+.connect-modal .wallet-card {
+  margin: 0;
+}
+
+.wallet-card {
+  max-width: 720px;
+  margin: 0 auto;
   background: $marketplace-bg-card;
   border-radius: 14px;
   box-shadow: 0 4px 24px rgba(0, 51, 102, 0.1), 0 1px 4px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 51, 102, 0.06);
-  position: relative;
+  border: 1px solid rgba(0, 51, 102, 0.08);
   overflow: hidden;
 
   &::before {
     content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
+    display: block;
+    height: 3px;
     background: linear-gradient(90deg, $marketplace-primary 0%, $marketplace-accent-alt 100%);
   }
+}
+
+.wallet-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px 24px 20px;
+
+  .connect-modal & {
+    padding-top: 52px;
+  }
+}
+
+.wallet-card-title {
+  min-width: 0;
+
+  h3 {
+    margin: 0 0 6px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $marketplace-primary;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: $marketplace-text-muted;
+  }
+
+  .platform-icons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+
+    i {
+      font-size: 1.25rem;
+      color: $marketplace-text-muted;
+
+      &.pi-android {
+        color: #3ddc84;
+      }
+
+      &.pi-apple {
+        color: $marketplace-text;
+      }
+    }
+  }
+}
+
+.wallet-card-body {
+  padding: 0 24px 24px;
 }
 
 .join-channel-qr-wrap {
@@ -443,8 +601,6 @@ onMounted(async () => {
   align-items: stretch;
   gap: 10px;
   min-width: 0;
-  flex: 1;
-  min-height: 120px;
 }
 
 .join-channel-toggle {
@@ -674,7 +830,7 @@ onMounted(async () => {
 }
 
 .cta-container {
-  max-width: 560px;
+  max-width: 720px;
   margin: 0 auto;
   text-align: center;
 
@@ -705,10 +861,12 @@ onMounted(async () => {
   font-size: 1.05rem;
 }
 
-.btn-outline {
+.btn-outline,
+.btn-connect {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   padding: 16px 36px;
   font-size: 1.05rem;
   font-weight: 600;
@@ -717,11 +875,16 @@ onMounted(async () => {
   border: 2px solid $marketplace-primary;
   border-radius: 10px;
   text-decoration: none;
-  transition: background 0.2s, color 0.2s;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
 
   &:hover {
     background: $marketplace-primary;
     color: white;
+  }
+
+  &:active {
+    transform: scale(0.98);
   }
 }
 

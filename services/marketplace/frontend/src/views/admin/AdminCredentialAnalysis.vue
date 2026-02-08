@@ -1,269 +1,241 @@
 <template>
   <div class="admin-credential-analysis">
     <div class="section-header">
-      <h2 class="section-title">Credential analysis</h2>
+      <h2 class="section-title">Transcript skills analysis</h2>
       <div class="header-actions">
         <button
           type="button"
-          class="refresh-btn"
-          :disabled="loading"
-          @click="load"
+          class="analyze-btn"
+          :disabled="analyzing || courses.length === 0"
+          @click="analyze"
         >
-          <i :class="loading ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'"></i>
-          {{ loading ? 'Loading...' : 'Refresh' }}
+          <i :class="analyzing ? 'pi pi-spin pi-spinner' : 'pi pi-chart-line'"></i>
+          {{ analyzing ? 'Analyzing...' : 'Analyze' }}
         </button>
+      </div>
+    </div>
+
+    <p class="section-desc">
+      Enter a list of courses (title + code) to analyze transcript skills. Uses the
+      <a
+        href="https://github.com/DigiCred-Holdings/transcript-skills-analysis"
+        target="_blank"
+        rel="noopener noreferrer"
+      >transcript-skills-analysis</a>
+      lambda: matches courses against the skills registry and returns skills of interest, pathways, and a summary.
+    </p>
+
+    <div class="form-panel">
+      <h3>Courses list</h3>
+      <p class="hint">Add courses as [title, code] pairs. Codes are matched against the skills registry.</p>
+
+      <div class="courses-table">
+        <div class="courses-header">
+          <span class="col-title">Course title</span>
+          <span class="col-code">Code</span>
+          <span class="col-actions"></span>
+        </div>
+        <div
+          v-for="(c, i) in courses"
+          :key="i"
+          class="course-row"
+        >
+          <input
+            v-model="c[0]"
+            type="text"
+            placeholder="e.g. English 12"
+            class="input-title"
+          />
+          <input
+            v-model="c[1]"
+            type="text"
+            placeholder="e.g. ENG12"
+            class="input-code"
+          />
+          <button
+            type="button"
+            class="btn-remove"
+            title="Remove"
+            @click="removeCourse(i)"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-actions-top">
         <button
           type="button"
-          class="save-btn"
-          :disabled="saving || !dirty"
-          @click="save"
+          class="btn-add"
+          @click="addCourse"
         >
-          <i :class="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"></i>
-          {{ saving ? 'Saving...' : 'Save' }}
+          <i class="pi pi-plus"></i>
+          Add course
         </button>
-      </div>
-    </div>
-
-    <div v-if="loading && !config" class="empty-state">
-      <i class="pi pi-spin pi-spinner"></i>
-      <p>Loading...</p>
-    </div>
-    <form v-else class="config-form" @submit.prevent="save">
-      <div class="form-panel">
-        <div class="form-row">
-          <label for="credTypes">Credential type</label>
-          <select
-            id="credTypes"
-            v-model="form.credentialType"
-            class="credential-select"
+        <div class="paste-area">
+          <label for="paste-json">Or paste JSON:</label>
+          <input
+            id="paste-json"
+            v-model="pasteJson"
+            type="text"
+            placeholder='[["English 12","ENG12"],["Math 12","MATH12"]]'
+            class="input-paste"
+          />
+          <button
+            type="button"
+            class="btn-paste"
+            :disabled="!pasteJson.trim()"
+            @click="applyPaste"
           >
-            <option value="">Select credential type</option>
-            <option
-              v-for="opt in credentialTypeOptions"
-              :key="opt"
-              :value="opt"
-            >
-              {{ opt }}
-            </option>
-          </select>
-        </div>
-
-        <div v-if="visibleExtractionFields.length > 0" class="form-section">
-          <h3>Extraction</h3>
-          <p class="section-hint">Fields available for selected credential types</p>
-          <div class="extraction-row">
-            <div class="checkbox-group">
-              <template v-for="field in visibleExtractionFields" :key="field.id">
-                <label v-if="field.type === 'checkbox'">
-                  <input
-                    v-model="form.extraction[field.modelKey]"
-                    type="checkbox"
-                  />
-                  {{ field.label }}
-                </label>
-              </template>
-            </div>
-            <div
-              v-for="field in visibleExtractionFields.filter((f) => f.type === 'number')"
-              :key="field.id"
-              class="number-field"
-            >
-              <label :for="field.id">{{ field.label }}</label>
-              <input
-                :id="field.id"
-                v-model.number="form.extraction[field.modelKey]"
-                type="number"
-                :min="field.min"
-                :max="field.max"
-              />
-            </div>
-          </div>
-        </div>
-        <div v-else-if="form.credentialType" class="form-section">
-          <p class="no-fields-hint">No extraction fields for selected credential types.</p>
-        </div>
-        <div v-else class="form-section">
-          <p class="no-fields-hint">Select credential types to configure extraction.</p>
-        </div>
-
-        <div class="form-section">
-          <h3>Matching</h3>
-          <div class="matching-row">
-            <div class="form-row-inline">
-              <label for="matchFields">Job fields</label>
-              <input
-                id="matchFields"
-                v-model="form.matchFieldsStr"
-                type="text"
-                placeholder="industry, occupation, educationRequirements"
-              />
-            </div>
-            <div class="number-field">
-              <label for="minScore">Min score</label>
-              <input
-                id="minScore"
-                v-model.number="form.matching.minScore"
-                type="number"
-                min="0"
-                max="1"
-                step="0.1"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="form-footer">
-          <label class="enabled-toggle">
-            <input v-model="form.enabled" type="checkbox" />
-            <span>Credential analysis enabled</span>
-          </label>
+            Apply
+          </button>
         </div>
       </div>
-    </form>
+
+      <p v-if="analysisError" class="form-error">{{ analysisError }}</p>
+    </div>
+
+    <div
+      v-if="result"
+      class="results-panel"
+    >
+      <h3>Results</h3>
+
+      <div class="summary-block">
+        <p class="summary-text">{{ result.summary }}</p>
+        <p class="meta">
+          {{ result.count }} skills · {{ result.course_ids?.length ?? 0 }} courses analyzed
+        </p>
+      </div>
+
+      <div
+        v-if="result.skill_level_counts?.length"
+        class="skill-levels"
+      >
+        <h4>Skill levels</h4>
+        <div class="level-bars">
+          <div
+            v-for="(n, i) in result.skill_level_counts"
+            :key="i"
+            class="level-bar"
+          >
+            <span class="level-label">Level {{ i + 1 }}</span>
+            <div
+              class="level-fill"
+              :style="{ width: levelWidth(n) + '%' }"
+            />
+            <span class="level-count">{{ n }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-if="result.skills_of_interest?.length"
+        class="skills-of-interest"
+      >
+        <h4>Skills of interest</h4>
+        <div
+          v-for="(skill, idx) in result.skills_of_interest"
+          :key="idx"
+          class="skill-card"
+        >
+          <div class="skill-header">
+            <span class="skill-name">{{ skill.name }}</span>
+            <span v-if="skill.category" class="skill-category">{{ skill.category }}</span>
+            <span v-if="skill.count != null" class="skill-count">×{{ skill.count }}</span>
+          </div>
+          <p
+            v-if="skill.pathways"
+            class="skill-pathways"
+          >
+            {{ skill.pathways }}
+          </p>
+        </div>
+      </div>
+
+      <div
+        v-if="result.course_ids?.length"
+        class="course-ids"
+      >
+        <h4>Analyzed course codes</h4>
+        <code class="course-ids-list">{{ result.course_ids.join(', ') }}</code>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref } from 'vue';
 import * as adminApi from '@/api/admin';
 
-const config = ref<adminApi.CredentialAnalysisConfig | null>(null);
-const loading = ref(false);
-const saving = ref(false);
-const credentialTypeOptions = ref<string[]>([]);
+type CourseEntry = [string, string];
 
-// Extraction fields per credential type
-const EXTRACTION_FIELDS_BY_CRED_TYPE: Record<string, string[]> = {
-  CollegeTranscript: ['program', 'gpa', 'courses', 'maxCourses'],
-  HighSchoolTranscript: ['program', 'gpa', 'courses', 'maxCourses'],
-  Diploma: ['program'],
-  StudentCard: [],
-  Degree: ['program'],
-  Certificate: ['program'],
-};
+const courses = ref<CourseEntry[]>([['', ''], ['', '']]);
+const pasteJson = ref('');
+const analyzing = ref(false);
+const analysisError = ref('');
+const result = ref<adminApi.TranscriptSkillsAnalysisResponse | null>(null);
 
-const EXTRACTION_FIELD_DEFS: Array<{
-  id: string;
-  modelKey: 'includeProgram' | 'includeGpa' | 'includeCourses' | 'maxCourses';
-  label: string;
-  type: 'checkbox' | 'number';
-  min?: number;
-  max?: number;
-}> = [
-  { id: 'program', modelKey: 'includeProgram', label: 'Program', type: 'checkbox' },
-  { id: 'gpa', modelKey: 'includeGpa', label: 'GPA', type: 'checkbox' },
-  { id: 'courses', modelKey: 'includeCourses', label: 'Courses', type: 'checkbox' },
-  { id: 'maxCourses', modelKey: 'maxCourses', label: 'Max courses', type: 'number', min: 1, max: 100 },
-];
-
-const visibleExtractionFields = computed(() => {
-  const selected = form.credentialType ? [form.credentialType] : [];
-  if (selected.length === 0) return [];
-  const fieldIds = new Set<string>();
-  for (const credType of selected) {
-    const fields = EXTRACTION_FIELDS_BY_CRED_TYPE[credType] ?? ['program'];
-    for (const f of fields) fieldIds.add(f);
-  }
-  return EXTRACTION_FIELD_DEFS.filter((def) => fieldIds.has(def.id));
-});
-
-const form = reactive({
-  credentialType: '' as string,
-  extraction: {
-    includeProgram: true,
-    includeGpa: true,
-    includeCourses: true,
-    maxCourses: 20,
-  },
-  matchFieldsStr: '',
-  matching: {
-    minScore: 0.2,
-  },
-  enabled: true,
-});
-
-const originalJson = ref('');
-
-const dirty = computed(() => {
-  const credentialTypes = form.credentialType ? [form.credentialType] : [];
-  const current = JSON.stringify({
-    credentialTypes,
-    extraction: form.extraction,
-    matching: {
-      matchFields: form.matchFieldsStr.split(',').map((s) => s.trim()).filter(Boolean),
-      minScore: form.matching.minScore,
-    },
-    enabled: form.enabled,
-  });
-  return current !== originalJson.value;
-});
-
-function applyConfig(c: adminApi.CredentialAnalysisConfig) {
-  config.value = c;
-  const types = c.credentialTypes ?? [];
-  const first = types[0] ?? '';
-  form.credentialType = credentialTypeOptions.value.includes(first) ? first : credentialTypeOptions.value[0] ?? '';
-  const ext = c.extraction ?? {};
-  form.extraction.includeProgram = ext.includeProgram ?? true;
-  form.extraction.includeGpa = ext.includeGpa ?? true;
-  form.extraction.includeCourses = ext.includeCourses ?? true;
-  form.extraction.maxCourses = ext.maxCourses ?? 20;
-  const match = c.matching ?? {};
-  form.matchFieldsStr = (match.matchFields ?? []).join(', ');
-  form.matching.minScore = match.minScore ?? 0.2;
-  form.enabled = c.enabled ?? true;
-  originalJson.value = JSON.stringify({
-    credentialTypes: form.credentialType ? [form.credentialType] : [],
-    extraction: form.extraction,
-    matching: {
-      matchFields: form.matchFieldsStr.split(',').map((s) => s.trim()).filter(Boolean),
-      minScore: form.matching.minScore,
-    },
-    enabled: form.enabled,
-  });
+function addCourse() {
+  courses.value.push(['', '']);
 }
 
-async function load() {
-  loading.value = true;
+function removeCourse(i: number) {
+  courses.value.splice(i, 1);
+}
+
+function applyPaste() {
   try {
-    const [registries, c] = await Promise.all([
-      adminApi.listTrustRegistries(),
-      adminApi.getCredentialAnalysisConfig(),
-    ]);
-    credentialTypeOptions.value = adminApi.getTrustRegistryCredentialTypes(registries);
-    applyConfig(c);
+    const parsed = JSON.parse(pasteJson.value) as unknown;
+    if (!Array.isArray(parsed)) {
+      analysisError.value = 'JSON must be an array of [title, code] pairs';
+      return;
+    }
+    const valid: CourseEntry[] = [];
+    for (const item of parsed) {
+      if (Array.isArray(item) && item.length >= 2 && typeof item[0] === 'string' && typeof item[1] === 'string') {
+        valid.push([item[0], item[1]]);
+      }
+    }
+    if (valid.length === 0) {
+      analysisError.value = 'No valid [title, code] pairs found. Format: [["English 12","ENG12"],["Math 12","MATH12"]]';
+      return;
+    }
+    courses.value = valid;
+    pasteJson.value = '';
+    analysisError.value = '';
   } catch {
-    config.value = null;
-  } finally {
-    loading.value = false;
+    analysisError.value = 'Invalid JSON. Use format: [["title","code"],["title2","code2"]]';
   }
 }
 
-async function save() {
-  const payload: adminApi.CredentialAnalysisConfig = {
-    credentialTypes: form.credentialType ? [form.credentialType] : [],
-    extraction: {
-      includeProgram: form.extraction.includeProgram,
-      includeGpa: form.extraction.includeGpa,
-      includeCourses: form.extraction.includeCourses,
-      maxCourses: Math.max(1, Math.min(100, form.extraction.maxCourses || 20)),
-    },
-    matching: {
-      matchFields: form.matchFieldsStr.split(',').map((s) => s.trim()).filter(Boolean),
-      minScore: Math.max(0, Math.min(1, form.matching.minScore ?? 0.2)),
-    },
-    enabled: form.enabled,
-  };
-  saving.value = true;
+function levelWidth(n: number): number {
+  const counts = result.value?.skill_level_counts ?? [0, 0, 0];
+  const max = Math.max(1, ...counts);
+  return (n / max) * 100;
+}
+
+async function analyze() {
+  const entries = courses.value
+    .filter((c) => c[0]?.trim() && c[1]?.trim())
+    .map((c) => [c[0].trim(), c[1].trim()] as CourseEntry);
+  if (entries.length === 0) {
+    analysisError.value = 'Add at least one course with title and code.';
+    return;
+  }
+  analyzing.value = true;
+  analysisError.value = '';
+  result.value = null;
   try {
-    const updated = await adminApi.updateCredentialAnalysisConfig(payload);
-    applyConfig(updated);
+    const data = await adminApi.analyzeTranscriptSkills(entries);
+    result.value = data;
+  } catch (err: unknown) {
+    const ax = err as { response?: { data?: { error?: string }; status?: number } };
+    analysisError.value = ax?.response?.data?.error ?? 'Failed to analyze transcript skills';
   } finally {
-    saving.value = false;
+    analyzing.value = false;
   }
 }
-
-onMounted(() => load());
 </script>
 
 <style scoped lang="scss">
@@ -273,13 +245,29 @@ onMounted(() => load());
 .admin-credential-analysis {
   overflow-x: hidden;
 
+  .section-desc {
+    font-size: 0.9rem;
+    color: $marketplace-text-muted;
+    margin: 0 0 20px 0;
+    line-height: 1.5;
+
+    a {
+      color: $marketplace-link;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
   .header-actions {
     display: flex;
     gap: 8px;
     align-items: center;
   }
 
-  .save-btn {
+  .analyze-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -288,245 +276,314 @@ onMounted(() => load());
     font-weight: 600;
     border-radius: 8px;
     border: none;
-    background: $marketplace-success;
+    background: $marketplace-primary;
     color: white;
     cursor: pointer;
-    transition: opacity 0.2s, transform 0.15s;
+    transition: opacity 0.2s;
 
     &:hover:not(:disabled) {
-      opacity: 0.95;
-      transform: translateY(-1px);
+      opacity: 0.9;
     }
 
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-      transform: none;
     }
   }
 
-  .config-form {
+  .form-panel,
+  .results-panel {
     margin-top: 20px;
-    min-width: 0;
-  }
-
-  .form-panel {
-    max-width: 540px;
-    min-width: 0;
-    padding: 28px 32px;
+    padding: 24px 28px;
     background: $marketplace-bg-card;
     border: 1px solid rgba($marketplace-primary, 0.08);
     border-radius: 12px;
-    overflow: hidden;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    max-width: 720px;
   }
 
-  .form-row {
-    margin-bottom: 24px;
+  .form-panel h3,
+  .results-panel h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: $marketplace-primary;
+    margin: 0 0 8px 0;
+  }
 
-    label {
-      display: block;
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: $marketplace-text;
-      margin-bottom: 8px;
-      letter-spacing: 0.01em;
-    }
+  .results-panel h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: $marketplace-text;
+    margin: 24px 0 12px 0;
 
-    input[type='text'] {
-      width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid $marketplace-panel-border;
-      font-size: 0.9rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
-
-      &:focus {
-        outline: none;
-        border-color: rgba($marketplace-primary, 0.4);
-        box-shadow: 0 0 0 3px rgba($marketplace-primary, 0.08);
-      }
-    }
-
-    .credential-select {
-      width: 100%;
-      padding: 12px 40px 12px 14px;
-      border-radius: 10px;
-      border: 1px solid $marketplace-panel-border;
-      font-size: 0.9rem;
-      font-family: ui-monospace, monospace;
-      background: white;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236c757d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 14px center;
-      cursor: pointer;
-      transition: border-color 0.2s, box-shadow 0.2s;
-
-      &:focus {
-        outline: none;
-        border-color: rgba($marketplace-primary, 0.4);
-        box-shadow: 0 0 0 3px rgba($marketplace-primary, 0.08);
-      }
-    }
-
-    .field-hint {
-      display: block;
-      font-size: 0.8rem;
-      color: $marketplace-text-muted;
-      margin-top: 6px;
+    &:first-of-type {
+      margin-top: 0;
     }
   }
 
-  .section-hint {
+  .hint {
     font-size: 0.8rem;
     color: $marketplace-text-muted;
-    margin: 0 0 14px 0;
+    margin: 0 0 16px 0;
     line-height: 1.4;
   }
 
-  .no-fields-hint {
-    font-size: 0.9rem;
-    color: $marketplace-text-muted;
-    font-style: italic;
-    margin: 0;
+  .courses-table {
+    margin-bottom: 16px;
   }
 
-  .form-section {
-    margin-top: 28px;
-    padding-top: 24px;
-    border-top: 1px solid rgba($marketplace-panel-border, 0.8);
+  .courses-header {
+    display: grid;
+    grid-template-columns: 1fr 120px 40px;
+    gap: 12px;
+    padding: 0 0 8px 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $marketplace-text-muted;
+    border-bottom: 1px solid $marketplace-panel-border;
+  }
 
-    h3 {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: $marketplace-primary;
-      margin: 0 0 14px 0;
-      letter-spacing: 0.02em;
+  .course-row {
+    display: grid;
+    grid-template-columns: 1fr 120px 40px;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba($marketplace-panel-border, 0.5);
+
+    &:last-child {
+      border-bottom: none;
     }
   }
 
-  .extraction-row,
-  .matching-row {
+  .input-title,
+  .input-code {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid $marketplace-panel-border;
+    font-size: 0.9rem;
+
+    &:focus {
+      outline: none;
+      border-color: rgba($marketplace-primary, 0.4);
+    }
+  }
+
+  .input-code {
+    font-family: ui-monospace, monospace;
+  }
+
+  .btn-remove {
+    padding: 8px;
+    border: none;
+    background: transparent;
+    color: $marketplace-text-muted;
+    cursor: pointer;
+    border-radius: 6px;
+
+    &:hover {
+      background: rgba($marketplace-danger, 0.1);
+      color: $marketplace-danger;
+    }
+  }
+
+  .form-actions-top {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
-    gap: 24px 32px;
-    min-width: 0;
+    gap: 16px 24px;
   }
 
-  .checkbox-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px 28px;
-
-    label {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      color: $marketplace-text;
-      padding: 8px 12px;
-      border-radius: 8px;
-      transition: background 0.15s;
-
-      &:hover {
-        background: rgba($marketplace-primary, 0.04);
-      }
-    }
-
-    input[type='checkbox'] {
-      width: 18px;
-      height: 18px;
-      accent-color: $marketplace-primary;
-    }
-  }
-
-  .number-field {
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: $marketplace-text-muted;
-      margin-bottom: 6px;
-    }
-
-    input[type='number'] {
-      width: 88px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid $marketplace-panel-border;
-      font-size: 0.9rem;
-      transition: border-color 0.2s;
-
-      &:focus {
-        outline: none;
-        border-color: rgba($marketplace-primary, 0.4);
-      }
-    }
-  }
-
-  .form-row-inline {
-    flex: 1 1 220px;
-    min-width: 0;
-
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: $marketplace-text-muted;
-      margin-bottom: 6px;
-    }
-
-    input {
-      width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: 1px solid $marketplace-panel-border;
-      font-size: 0.9rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
-
-      &:focus {
-        outline: none;
-        border-color: rgba($marketplace-primary, 0.4);
-        box-shadow: 0 0 0 3px rgba($marketplace-primary, 0.08);
-      }
-    }
-  }
-
-  .form-footer {
-    margin-top: 28px;
-    padding-top: 24px;
-    border-top: 1px solid rgba($marketplace-panel-border, 0.8);
-  }
-
-  .enabled-toggle {
+  .btn-add {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
-    font-size: 0.95rem;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
     font-weight: 500;
+    border-radius: 8px;
+    border: 1px solid $marketplace-panel-border;
+    background: white;
+    color: $marketplace-primary;
     cursor: pointer;
-    color: $marketplace-text;
-    padding: 12px 16px;
-    background: rgba($marketplace-primary, 0.04);
-    border-radius: 10px;
-    transition: background 0.15s;
 
     &:hover {
-      background: rgba($marketplace-primary, 0.08);
+      background: rgba($marketplace-primary, 0.06);
+      border-color: rgba($marketplace-primary, 0.3);
+    }
+  }
+
+  .paste-area {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    label {
+      font-size: 0.85rem;
+      color: $marketplace-text-muted;
+      white-space: nowrap;
     }
 
-    input[type='checkbox'] {
-      width: 20px;
-      height: 20px;
-      accent-color: $marketplace-success;
+    .input-paste {
+      flex: 1;
+      min-width: 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid $marketplace-panel-border;
+      font-size: 0.85rem;
+      font-family: ui-monospace, monospace;
+
+      &:focus {
+        outline: none;
+        border-color: rgba($marketplace-primary, 0.4);
+      }
     }
+
+    .btn-paste {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: 8px;
+      border: 1px solid $marketplace-panel-border;
+      background: white;
+      cursor: pointer;
+
+      &:hover:not(:disabled) {
+        background: rgba($marketplace-primary, 0.06);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .form-error {
+    font-size: 0.9rem;
+    color: $marketplace-danger;
+    margin: 16px 0 0 0;
+  }
+
+  .results-panel {
+    margin-top: 24px;
+  }
+
+  .summary-block {
+    margin-top: 16px;
+  }
+
+  .summary-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: $marketplace-text;
+    margin: 0 0 12px 0;
+  }
+
+  .meta {
+    font-size: 0.85rem;
+    color: $marketplace-text-muted;
+    margin: 0;
+  }
+
+  .level-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .level-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    height: 24px;
+  }
+
+  .level-label {
+    width: 60px;
+    font-size: 0.85rem;
+    color: $marketplace-text-muted;
+  }
+
+  .level-fill {
+    flex: 1;
+    height: 12px;
+    background: rgba($marketplace-primary, 0.25);
+    border-radius: 6px;
+    min-width: 4px;
+    transition: width 0.3s;
+  }
+
+  .level-count {
+    width: 24px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $marketplace-text;
+    text-align: right;
+  }
+
+  .skill-card {
+    padding: 16px 18px;
+    background: rgba($marketplace-primary, 0.04);
+    border: 1px solid rgba($marketplace-panel-border, 0.8);
+    border-radius: 10px;
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .skill-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .skill-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: $marketplace-primary;
+  }
+
+  .skill-category {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    background: rgba($marketplace-primary, 0.1);
+    color: $marketplace-text-muted;
+    border-radius: 6px;
+  }
+
+  .skill-count {
+    font-size: 0.8rem;
+    color: $marketplace-text-muted;
+  }
+
+  .skill-pathways {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: $marketplace-text;
+    margin: 0;
+  }
+
+  .course-ids {
+    margin-top: 20px;
+  }
+
+  .course-ids-list {
+    display: block;
+    padding: 12px 16px;
+    background: rgba(0, 51, 102, 0.05);
+    border: 1px solid $marketplace-panel-border;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: ui-monospace, monospace;
+    word-break: break-all;
   }
 }
 </style>

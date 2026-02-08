@@ -2,58 +2,62 @@
   <div class="admin-dashboard">
     <header class="admin-header">
       <div class="admin-header-inner">
-        <h1 class="admin-title">Innkeeper</h1>
-        <nav class="admin-tabs">
-          <router-link
-            v-for="item in mainTabs"
-            :key="item.path"
-            :to="item.path"
-            class="tab-link"
-            :class="{ active: isActive(item.path) }"
-          >
-            <i :class="['pi', item.icon]"></i>
-            <span>{{ item.label }}</span>
-            <span v-if="item.count != null" class="tab-badge">{{ item.count }}</span>
-          </router-link>
-          <div v-if="showMarketplaceTabs" class="tab-divider"></div>
-          <router-link
-            v-for="item in marketplaceTabs"
-            v-show="showMarketplaceTabs"
-            :key="item.path"
-            :to="item.path"
-            class="tab-link sub"
-            :class="{ active: route.path === item.path }"
-          >
-            <i :class="['pi', item.icon]"></i>
-            <span>{{ item.label }}</span>
-          </router-link>
-        </nav>
+        <button type="button" class="menu-toggle" aria-label="Toggle menu" @click="sidebarOpen = !sidebarOpen">
+          <i class="pi pi-bars"></i>
+        </button>
+        <h1 class="admin-title">Innkeeper's Desk</h1>
         <button type="button" class="sign-out-btn" @click="handleSignOut">
           <i class="pi pi-sign-out"></i>
-          Sign out
+          <span class="sign-out-label">Sign out</span>
         </button>
       </div>
     </header>
-    <main class="admin-content">
-      <router-view v-slot="{ Component }">
-        <template v-if="isPending">
-          <div class="loading-state">
-            <i class="pi pi-spin pi-spinner"></i>
-            <p>Loading...</p>
+
+    <div class="admin-layout">
+      <aside class="admin-sidebar" :class="{ open: sidebarOpen }">
+        <nav class="sidebar-nav">
+          <div v-for="group in navGroups" :key="group.label" class="nav-group">
+            <span class="nav-group-label">{{ group.label }}</span>
+            <router-link
+              v-for="item in group.items"
+              :key="item.path"
+              :to="item.path"
+              class="nav-link"
+              :class="{ active: isActive(item.path) }"
+              @click="sidebarOpen = false"
+            >
+              <i :class="['pi', item.icon]"></i>
+              <span class="nav-label">{{ item.label }}</span>
+              <span v-if="item.count != null" class="nav-badge">{{ item.count }}</span>
+            </router-link>
           </div>
-        </template>
-        <component v-else-if="Component" :is="Component" />
-      </router-view>
-    </main>
+        </nav>
+      </aside>
+
+      <div class="sidebar-backdrop" :class="{ open: sidebarOpen }" @click="sidebarOpen = false" />
+
+      <main class="admin-content">
+        <router-view v-slot="{ Component }">
+          <template v-if="isPending">
+            <div class="loading-state">
+              <i class="pi pi-spin pi-spinner"></i>
+              <p>Loading...</p>
+            </div>
+          </template>
+          <component v-else-if="Component" :is="Component" />
+        </router-view>
+      </main>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useRouteLoading } from '@/composables/useRouteLoading';
 import { useAdminStore } from '@/store/adminStore';
 import { useTenantRequestStore } from '@/store/tenantRequestStore';
+import { innkeeperLogout } from '@/api/auth';
 
 const route = useRoute();
 const router = useRouter();
@@ -61,27 +65,47 @@ const { isPending } = useRouteLoading();
 const adminStore = useAdminStore();
 const tenantStore = useTenantRequestStore();
 
-const mainTabs = computed(() => [
-  { path: '/innkeeper/requests', label: 'Reservations', icon: 'pi-inbox', count: tenantStore.pendingRequests.length },
-  { path: '/innkeeper/tenants', label: 'Tenants', icon: 'pi-users' },
-  { path: '/innkeeper/trust-registries', label: 'Trust registry', icon: 'pi-shield' },
-  { path: '/innkeeper/credential-analysis', label: 'Credential analysis', icon: 'pi-file-edit' },
-  { path: '/innkeeper/workflows', label: 'Workflows', icon: 'pi-sitemap' },
-  { path: '/innkeeper/marketplace', label: 'Marketplace', icon: 'pi-store' },
+const sidebarOpen = ref(false);
+
+const navGroups = computed(() => [
+  {
+    label: 'Onboarding',
+    items: [
+      { path: '/innkeeper/requests', label: 'Reservations', icon: 'pi-inbox', count: tenantStore.pendingRequests.length },
+      { path: '/innkeeper/tenants', label: 'Tenants', icon: 'pi-users' },
+    ],
+  },
+  {
+    label: 'Configuration',
+    items: [
+      { path: '/innkeeper/trust-registries', label: 'Trust registry', icon: 'pi-shield' },
+      { path: '/innkeeper/workflows', label: 'Configure workflow', icon: 'pi-sitemap' },
+    ],
+  },
+  {
+    label: 'Marketplace',
+    items: [
+      { path: '/innkeeper/marketplace/invitation', label: 'Invitation', icon: 'pi-qrcode' },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { path: '/innkeeper/credential-analysis', label: 'Credential analysis', icon: 'pi-file-edit' },
+    ],
+  },
 ]);
-
-const marketplaceTabs = [
-  { path: '/innkeeper/marketplace/invitation', label: 'Invitation', icon: 'pi-qrcode' },
-  { path: '/innkeeper/marketplace/action-menu', label: 'Action menu', icon: 'pi-list' },
-];
-
-const showMarketplaceTabs = computed(() => route.path.startsWith('/innkeeper/marketplace'));
 
 function isActive(path: string) {
   return route.path === path || route.path.startsWith(path + '/');
 }
 
-function handleSignOut() {
+async function handleSignOut() {
+  try {
+    await innkeeperLogout();
+  } catch {
+    // Ignore - still clear local state
+  }
   adminStore.clearAdmin();
   router.replace('/innkeeper/login');
 }
@@ -91,7 +115,7 @@ function handleSignOut() {
 @use '@/assets/variables.scss' as *;
 
 .admin-dashboard {
-  min-height: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: $marketplace-bg;
@@ -100,50 +124,33 @@ function handleSignOut() {
 .admin-header {
   background: $marketplace-bg-card;
   border-bottom: 1px solid $marketplace-panel-border;
-  padding: 16px;
+  padding: 12px 16px;
   flex-shrink: 0;
-
-  @media (min-width: $breakpoint-desktop) {
-    padding: 20px 24px;
-  }
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .admin-header-inner {
   max-width: $content-max-width;
   margin: 0 auto;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
 }
 
-.admin-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: $marketplace-primary;
-  margin: 0;
-}
-
-.admin-tabs {
+.menu-toggle {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
-}
-
-.tab-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
   color: $marketplace-text-muted;
-  text-decoration: none;
   border-radius: 8px;
-  white-space: nowrap;
+  cursor: pointer;
   transition: background 0.2s, color 0.2s;
 
   &:hover {
@@ -151,39 +158,24 @@ function handleSignOut() {
     color: $marketplace-primary;
   }
 
-  &.active {
-    background: rgba(0, 51, 102, 0.1);
-    color: $marketplace-primary;
-    font-weight: 600;
-  }
-
-  &.sub {
-    font-size: 0.85rem;
-    padding: 6px 12px;
+  @media (min-width: $breakpoint-desktop) {
+    display: none;
   }
 }
 
-.tab-badge {
-  background: $marketplace-primary;
-  color: white;
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-.tab-divider {
-  width: 1px;
-  height: 20px;
-  background: $marketplace-panel-border;
-  margin: 0 4px;
+.admin-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: $marketplace-primary;
+  margin: 0;
+  flex: 1;
 }
 
 .sign-out-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 8px 14px;
   font-size: 0.9rem;
   font-weight: 600;
   border-radius: 8px;
@@ -197,6 +189,135 @@ function handleSignOut() {
     background: rgba(0, 51, 102, 0.06);
     color: $marketplace-primary;
   }
+}
+
+.sign-out-label {
+  @media (max-width: 400px) {
+    display: none;
+  }
+}
+
+.admin-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-sidebar {
+  flex-shrink: 0;
+  width: 220px;
+  background: $marketplace-bg-card;
+  border-right: 1px solid $marketplace-panel-border;
+  overflow-y: auto;
+  position: fixed;
+  top: 64px;
+  bottom: 0;
+  left: 0;
+  z-index: 90;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+
+  @media (min-width: $breakpoint-desktop) {
+    position: static;
+    transform: none;
+    top: auto;
+    bottom: auto;
+  }
+}
+
+.admin-sidebar.open {
+  transform: translateX(0);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 85;
+  top: 64px;
+
+  &.open {
+    display: block;
+    @media (min-width: $breakpoint-desktop) {
+      display: none;
+    }
+  }
+}
+
+.sidebar-nav {
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-group-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: $marketplace-text-muted;
+  padding: 8px 10px 4px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: $marketplace-text;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+
+  i {
+    font-size: 1rem;
+    opacity: 0.8;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: rgba(0, 51, 102, 0.06);
+    color: $marketplace-primary;
+  }
+
+  &.active {
+    background: rgba(0, 51, 102, 0.1);
+    color: $marketplace-primary;
+    font-weight: 600;
+
+    i {
+      opacity: 1;
+    }
+  }
+}
+
+.nav-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-badge {
+  background: $marketplace-primary;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .admin-content {

@@ -1,0 +1,573 @@
+{
+  "personas": [
+    {
+      "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174000",
+      "type": "Student",
+      "credentials": [
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174001",
+          "type": "StudentCard",
+          "name": "UoC Student Card",
+          "credentialSubject": {
+            "givenName": "John",
+            "familyName": "Doe",
+            "validFrom": "2024-01-01T00:00:00.000Z",
+            "validUntil": "2026-01-01T00:00:00.000Z"
+          }
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174003",
+          "type": "HighSchoolTranscript",
+          "name": "NC High School Transcript",
+          "establishmentName": "North Carolina High School",
+          "image": "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=600",
+          "logo": "https://api.dicebear.com/7.x/identicon/png?seed=NCHighSchool&size=80",
+          "credentialSubject": {
+            "givenName": "John",
+            "familyName": "Doe",
+            "validFrom": "2024-01-01T00:00:00.000Z",
+            "validUntil": "2026-01-01T00:00:00.000Z",
+            "gpa": 3.8,
+            "graduationDate": "2022-06",
+            "courses": [
+              {
+                "name": "Biology",
+                "grade": "A",
+                "credits": 1
+              },
+              {
+                "name": "Chemistry",
+                "grade": "A-",
+                "credits": 1
+              },
+              {
+                "name": "Algebra II",
+                "grade": "A",
+                "credits": 1
+              },
+              {
+                "name": "English Literature",
+                "grade": "B+",
+                "credits": 1
+              },
+              {
+                "name": "US History",
+                "grade": "A",
+                "credits": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174002",
+          "type": "CollegeTranscript",
+          "name": "UoC College Transcript",
+          "establishmentName": "University of Colorado",
+          "image": "https://images.unsplash.com/photo-1562774053-701939374585?w=600",
+          "logo": "https://api.dicebear.com/7.x/identicon/png?seed=UoC&size=80",
+          "credentialSubject": {
+            "givenName": "John",
+            "familyName": "Doe",
+            "validFrom": "2024-01-01T00:00:00.000Z",
+            "validUntil": "2026-01-01T00:00:00.000Z",
+            "program": "Bachelor of Science in Nursing",
+            "gpa": 3.7,
+            "graduationDate": "2024-05",
+            "courses": [
+              {
+                "name": "Anatomy & Physiology I",
+                "grade": "A",
+                "credits": 4,
+                "semester": "Fall 2022"
+              },
+              {
+                "name": "Anatomy & Physiology II",
+                "grade": "A-",
+                "credits": 4,
+                "semester": "Spring 2023"
+              },
+              {
+                "name": "Introduction to Nursing",
+                "grade": "A",
+                "credits": 3,
+                "semester": "Fall 2022"
+              },
+              {
+                "name": "Pharmacology",
+                "grade": "B+",
+                "credits": 3,
+                "semester": "Spring 2023"
+              },
+              {
+                "name": "Clinical Practice I",
+                "grade": "A",
+                "credits": 4,
+                "semester": "Fall 2023"
+              },
+              {
+                "name": "Medical-Surgical Nursing",
+                "grade": "A",
+                "credits": 4,
+                "semester": "Spring 2024"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174010",
+      "type": "Employer",
+      "name": "Metro General Hospital",
+      "category": "Healthcare",
+      "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600",
+      "logo": "https://api.dicebear.com/7.x/identicon/png?seed=MetroGeneral&size=96",
+      "jobPostings": [
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174011",
+          "type": "JobPosting",
+          "name": "Registered Nurse (RN)",
+          "featured": true,
+          "description": "Join our nursing team. Provide direct patient care, administer medications, and collaborate with physicians. Full-time, day shift available.",
+          "category": "Healthcare",
+          "requirements": [
+            "Valid RN license",
+            "BLS certification",
+            "1+ years experience preferred"
+          ]
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174012",
+          "type": "JobPosting",
+          "name": "Medical Assistant",
+          "description": "Support clinical operations. Take vitals, prepare patients for exams, and assist with minor procedures. Great entry-level opportunity.",
+          "category": "Healthcare",
+          "requirements": [
+            "MA certification or equivalent",
+            "Strong communication skills"
+          ]
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174013",
+          "type": "JobPosting",
+          "name": "Mental Health Specialist",
+          "description": "Provide counseling and support services. Work with diverse populations in outpatient and inpatient settings. LCSW or LPC required.",
+          "category": "Healthcare",
+          "requirements": [
+            "LCSW, LPC, or LMFT license",
+            "2+ years clinical experience"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174014",
+      "type": "Employer",
+      "name": "Sunrise Care Clinic",
+      "category": "Healthcare",
+      "image": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600",
+      "logo": "https://api.dicebear.com/7.x/identicon/png?seed=SunriseCare&size=96",
+      "jobPostings": [
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174015",
+          "type": "JobPosting",
+          "name": "Licensed Practical Nurse (LPN)",
+          "description": "Primary care clinic seeking LPN for patient intake, wound care, and medication administration. Flexible scheduling.",
+          "category": "Healthcare",
+          "requirements": [
+            "Current LPN license",
+            "Phlebotomy skills a plus"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174020",
+      "type": "Employer",
+      "name": "TechFlow Solutions",
+      "category": "Technology",
+      "image": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600",
+      "logo": "https://api.dicebear.com/7.x/identicon/png?seed=TechFlow&size=96",
+      "jobPostings": [
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174021",
+          "type": "JobPosting",
+          "name": "Software Engineer",
+          "featured": true,
+          "description": "Build scalable web applications. Work with React, Node.js, and cloud infrastructure. Remote-friendly, competitive salary.",
+          "category": "Technology",
+          "location": "Remote (US & Canada)",
+          "employmentType": "Full-time",
+          "salary": "$90k - $130k",
+          "requirements": [
+            "2+ years software development experience",
+            "Proficiency in JavaScript/TypeScript",
+            "Experience with REST APIs"
+          ],
+          "benefits": [
+            "Health, dental, and vision insurance",
+            "401(k) with company match",
+            "Unlimited PTO",
+            "Remote work stipend"
+          ]
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174022",
+          "type": "JobPosting",
+          "name": "Data Engineer",
+          "description": "Design and maintain data pipelines. Work with AWS, Snowflake, and dbt. Help shape our analytics infrastructure.",
+          "category": "Technology",
+          "location": "San Francisco, CA",
+          "employmentType": "Full-time",
+          "salary": "$110k - $150k",
+          "requirements": [
+            "SQL and Python proficiency",
+            "Experience with cloud data platforms",
+            "ETL/ELT pipeline development"
+          ],
+          "benefits": [
+            "Comprehensive health coverage",
+            "Stock options",
+            "Professional development budget",
+            "Flexible schedule"
+          ]
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174023",
+          "type": "JobPosting",
+          "name": "DevOps Engineer",
+          "description": "Own our CI/CD pipelines and infrastructure. Kubernetes, Terraform, and observability tools. Join a growing platform team.",
+          "category": "Technology",
+          "location": "Remote (Worldwide)",
+          "employmentType": "Full-time",
+          "salary": "$120k - $160k",
+          "requirements": [
+            "3+ years DevOps/SRE experience",
+            "Kubernetes and cloud experience",
+            "Infrastructure as Code"
+          ],
+          "benefits": [
+            "Global remote work",
+            "Home office setup budget",
+            "Health insurance",
+            "Annual team retreats"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174024",
+      "type": "Employer",
+      "name": "DataDrive Analytics",
+      "category": "Technology",
+      "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600",
+      "logo": "https://api.dicebear.com/7.x/identicon/png?seed=DataDrive&size=96",
+      "jobPostings": [
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174025",
+          "type": "JobPosting",
+          "name": "Data Analyst",
+          "featured": true,
+          "description": "Turn data into insights. Create dashboards, run analyses, and support business decisions. Tableau and SQL required.",
+          "category": "Technology",
+          "location": "New York, NY (Hybrid)",
+          "employmentType": "Full-time",
+          "salary": "$75k - $95k",
+          "requirements": [
+            "1+ years analytics experience",
+            "SQL and visualization tools",
+            "Strong analytical mindset"
+          ],
+          "benefits": [
+            "Health and wellness programs",
+            "Transit benefits",
+            "Learning stipend",
+            "Hybrid work model"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174005",
+      "type": "Employer",
+      "name": "Pizza Utopia Inc.",
+      "category": "Food & Beverage",
+      "image": "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600",
+      "logo": "https://api.dicebear.com/7.x/identicon/png?seed=PizzaUtopia&size=96",
+      "jobPostings": [
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174004",
+          "type": "JobPosting",
+          "name": "Mobile App Developer",
+          "description": "Build our customer-facing ordering app. React Native experience preferred. Work with a fun, food-loving team.",
+          "category": "Technology",
+          "location": "Remote (US)",
+          "employmentType": "Full-time",
+          "salary": "$85k - $115k",
+          "requirements": [
+            "React Native or mobile development experience",
+            "REST API integration"
+          ],
+          "benefits": [
+            "Remote work flexibility",
+            "Free pizza (seriously!)",
+            "Health and dental insurance",
+            "Equity options"
+          ]
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-42661417400a",
+          "type": "JobPosting",
+          "name": "Baker",
+          "description": "Craft artisan pizzas and breads. Early morning shifts available. No experience required—we train.",
+          "category": "Food & Beverage",
+          "location": "Brooklyn, NY",
+          "employmentType": "Part-time",
+          "salary": "$18 - $22/hr",
+          "requirements": [],
+          "benefits": [
+            "Flexible scheduling",
+            "Free meals during shifts",
+            "Paid training",
+            "Tips"
+          ]
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-42661417400b",
+          "type": "JobPosting",
+          "name": "Line Cook",
+          "description": "Fast-paced kitchen environment. Prep ingredients, cook to order, maintain station. Growth opportunities for motivated candidates.",
+          "category": "Food & Beverage",
+          "location": "Brooklyn, NY",
+          "employmentType": "Full-time",
+          "salary": "$42k - $52k",
+          "requirements": [
+            "Food handler certification",
+            "Ability to work in a team"
+          ],
+          "benefits": [
+            "Health benefits",
+            "Employee meal discounts",
+            "Paid time off",
+            "Career advancement"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174030",
+      "type": "Employer",
+      "name": "Brew & Grind Coffee Co.",
+      "category": "Food & Beverage",
+      "image": "https://images.unsplash.com/photo-1445116572660-236099ec97a0?w=600",
+      "logo": "https://api.dicebear.com/7.x/identicon/png?seed=BrewGrind&size=96",
+      "jobPostings": [
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174031",
+          "type": "JobPosting",
+          "name": "Barista",
+          "featured": true,
+          "description": "Create great coffee experiences. Learn latte art, engage with customers, and join a welcoming team. Part-time and full-time.",
+          "category": "Food & Beverage",
+          "location": "Seattle, WA",
+          "employmentType": "Part-time / Full-time",
+          "salary": "$16 - $20/hr + tips",
+          "requirements": [
+            "Customer service experience",
+            "Weekend availability"
+          ],
+          "benefits": [
+            "Free coffee and pastries",
+            "Flexible hours",
+            "Barista training",
+            "Employee discounts"
+          ]
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174032",
+          "type": "JobPosting",
+          "name": "Shift Supervisor",
+          "description": "Lead daily operations. Manage inventory, train baristas, and ensure quality. Previous café experience required.",
+          "category": "Food & Beverage",
+          "location": "Seattle, WA",
+          "employmentType": "Full-time",
+          "salary": "$45k - $55k",
+          "requirements": [
+            "1+ years café/restaurant experience",
+            "Leadership skills"
+          ],
+          "benefits": [
+            "Health insurance",
+            "Paid vacation",
+            "Management training",
+            "Bonus opportunities"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174007",
+      "type": "Employer",
+      "name": "Library of Congress",
+      "category": "Government",
+      "image": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600",
+      "logo": "https://api.dicebear.com/7.x/identicon/png?seed=LibraryCongress&size=96",
+      "jobPostings": [
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174006",
+          "type": "JobPosting",
+          "name": "Library Intern",
+          "featured": true,
+          "description": "Gain experience in cataloging, preservation, and research services. Ideal for library science students. Paid internship.",
+          "category": "Government",
+          "location": "Washington, DC",
+          "employmentType": "Internship",
+          "salary": "$20/hr",
+          "requirements": [
+            "Enrolled in or completed library/MLIS program",
+            "Strong organizational skills"
+          ],
+          "benefits": [
+            "Federal employee access",
+            "Networking opportunities",
+            "Professional development",
+            "Transit subsidy"
+          ]
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174033",
+          "type": "JobPosting",
+          "name": "Archivist",
+          "description": "Preserve and organize historical collections. Digitization projects and public access initiatives. Federal benefits.",
+          "category": "Government",
+          "location": "Washington, DC",
+          "employmentType": "Full-time",
+          "salary": "$65k - $85k",
+          "requirements": [
+            "MLIS or related degree",
+            "Experience with archival standards"
+          ],
+          "benefits": [
+            "Federal benefits package",
+            "Pension plan",
+            "Paid holidays",
+            "Student loan forgiveness eligible"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174034",
+      "type": "Employer",
+      "name": "City of Riverside",
+      "category": "Government",
+      "image": "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=600",
+      "logo": "https://api.dicebear.com/7.x/identicon/png?seed=CityRiverside&size=96",
+      "jobPostings": [
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174035",
+          "type": "JobPosting",
+          "name": "Administrative Assistant",
+          "description": "Support city departments. Handle correspondence, scheduling, and records. Great benefits and work-life balance.",
+          "category": "Government",
+          "requirements": [
+            "High school diploma",
+            "Proficiency in MS Office"
+          ]
+        },
+        {
+          "id": "urn:uuid:123e4567-e89b-12d3-a456-426614174036",
+          "type": "JobPosting",
+          "name": "Parks Maintenance Worker",
+          "description": "Maintain public parks and green spaces. Groundskeeping, equipment operation, and seasonal projects.",
+          "category": "Government",
+          "requirements": [
+            "Valid driver's license",
+            "Physical ability for outdoor work"
+          ]
+        }
+      ]
+    }
+  ],
+  "adminLogins": [
+    {
+      "email": "admin",
+      "password": "123"
+    }
+  ],
+  "employerLogins": [
+    {
+      "employerId": "urn:uuid:123e4567-e89b-12d3-a456-426614174005",
+      "email": "hr@pizzautopia.com",
+      "password": "demo123"
+    },
+    {
+      "employerId": "urn:uuid:123e4567-e89b-12d3-a456-426614174007",
+      "email": "hr@loc.gov",
+      "password": "demo123"
+    },
+    {
+      "employerId": "urn:uuid:123e4567-e89b-12d3-a456-426614174010",
+      "email": "careers@metrogeneral.org",
+      "password": "demo123"
+    },
+    {
+      "employerId": "urn:uuid:123e4567-e89b-12d3-a456-426614174020",
+      "email": "jobs@techflow.io",
+      "password": "demo123"
+    }
+  ],
+  "tenantRequests": [
+    {
+      "id": "req-1",
+      "tenantType": "Employer",
+      "name": "TechCorp Industries",
+      "email": "hr@techcorp.example.com",
+      "submittedAt": "2025-01-28T10:00:00Z",
+      "status": "pending",
+      "contactName": "Sarah Chen",
+      "contactTitle": "HR Director",
+      "contactPhone": "+1 (303) 555-0123",
+      "registrationId": "84-1234567",
+      "jurisdiction": "Delaware, US",
+      "businessAddress": "1500 Market St, Denver, CO 80202",
+      "website": "https://techcorp.example.com",
+      "industry": "Technology",
+      "intendedUse": "Post software engineering and product roles; receive credential-backed applications",
+      "hiringVolume": "51-200",
+      "primaryIndustries": "Healthcare, Technology"
+    },
+    {
+      "id": "req-2",
+      "tenantType": "Scholarship Admin",
+      "name": "State Education Foundation",
+      "email": "admin@stateedu.org",
+      "submittedAt": "2025-01-27T14:30:00Z",
+      "status": "pending",
+      "contactName": "Michael Torres",
+      "contactTitle": "Program Director",
+      "registrationId": "DUNS 123456789",
+      "jurisdiction": "Colorado, US",
+      "website": "https://stateedu.org",
+      "industry": "Education",
+      "intendedUse": "Manage scholarship applications; verify student credentials"
+    },
+    {
+      "id": "req-3",
+      "tenantType": "Education Institution",
+      "name": "Metro Community College",
+      "email": "registrar@metrocc.edu",
+      "submittedAt": "2025-01-26T09:15:00Z",
+      "status": "pending",
+      "contactName": "Dr. Patricia Williams",
+      "contactTitle": "Registrar",
+      "contactPhone": "+1 (303) 555-7890",
+      "businessAddress": "1000 College Way, Denver, CO 80204",
+      "website": "https://metrocc.edu",
+      "industry": "Education",
+      "intendedUse": "Issue and verify academic credentials; partner with employers for job matching",
+      "accreditation": "Higher Learning Commission (HLC)",
+      "credentialTypes": "Transcripts, diplomas, certificates, digital badges"
+    }
+  ]
+}

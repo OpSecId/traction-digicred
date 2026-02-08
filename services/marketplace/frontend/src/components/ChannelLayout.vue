@@ -9,24 +9,14 @@
       <div v-if="showSearch" class="channel-search">
         <i class="pi pi-search"></i>
         <input
+          id="channel-search"
           :value="searchQuery"
           type="search"
+          name="q"
           placeholder="Search"
           class="channel-search-input"
           @input="onSearchInput"
         />
-      </div>
-      <div v-if="!isJobDetail" class="channel-categories">
-        <router-link
-          v-for="item in bottomTabs"
-          :key="item.path"
-          :to="item.path"
-          class="category-chip"
-          :class="{ active: isTabActive(item) }"
-        >
-          <i :class="['pi', item.icon, 'category-icon']"></i>
-          <span class="category-label">{{ item.label }}</span>
-        </router-link>
       </div>
     </header>
 
@@ -43,7 +33,7 @@
       </router-view>
     </main>
 
-    <!-- Bottom tab bar (Uber Eats style) — hidden on job detail -->
+    <!-- Bottom tab bar (Uber Eats style) — floating round icon buttons -->
     <nav v-if="!isJobDetail" class="channel-bottom-nav">
       <router-link
         v-for="item in bottomTabs"
@@ -52,7 +42,9 @@
         class="nav-tab"
         :class="{ active: isTabActive(item) }"
       >
-        <i :class="['pi', item.icon, 'nav-icon']"></i>
+        <span class="nav-tab-icon-wrap">
+          <i :class="['pi', item.icon, 'nav-icon']"></i>
+        </span>
         <span class="nav-label">{{ item.label }}</span>
       </router-link>
     </nav>
@@ -168,42 +160,6 @@ function isTabActive(item: { path: string }) {
   }
 }
 
-.channel-categories {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 4px;
-}
-
-.category-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.9);
-  text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background 0.2s, color 0.2s;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.35);
-    color: white;
-  }
-
-  &.active {
-    background: white;
-    color: $marketplace-primary;
-  }
-
-  .category-icon {
-    font-size: 1rem;
-  }
-}
-
 .channel-search-input {
   flex: 1;
   border: none;
@@ -222,6 +178,7 @@ function isTabActive(item: { path: string }) {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 90px; /* Space for floating bottom nav */
 }
 
 .loading-placeholder {
@@ -243,10 +200,13 @@ function isTabActive(item: { path: string }) {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0));
+  gap: 4px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0));
+  margin: 0 12px 12px;
   background: $marketplace-bg-card;
-  border-top: 1px solid $marketplace-panel-border;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+  border-radius: 28px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  border: 1px solid $marketplace-panel-border;
 }
 
 .nav-tab {
@@ -254,20 +214,41 @@ function isTabActive(item: { path: string }) {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 8px 16px;
+  padding: 6px 12px;
   text-decoration: none;
   color: $marketplace-text-muted;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
-  transition: color 0.2s;
-  border-radius: 8px;
+  transition: color 0.2s, background 0.2s;
+  border-radius: 24px;
 
-  &.active {
+  &:hover {
     color: $marketplace-primary;
   }
 
+  &.active {
+    color: $marketplace-primary;
+
+    .nav-tab-icon-wrap {
+      background: rgba(0, 51, 102, 0.12);
+      color: $marketplace-primary;
+    }
+  }
+
+  .nav-tab-icon-wrap {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: transparent;
+    color: $marketplace-text-muted;
+    transition: background 0.2s, color 0.2s;
+  }
+
   .nav-icon {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
   }
 }
 </style>

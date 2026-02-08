@@ -11,7 +11,7 @@
 
     <!-- Transcript overview card (shown when transcript shared) -->
     <section
-      v-if="transcriptStore.transcriptShared && !demoStore.loading && !demoStore.error"
+      v-if="transcriptStore.transcriptShared && !jobsStore.loading && !jobsStore.error"
       class="transcript-overview-section"
     >
       <div class="transcript-overview-card">
@@ -72,7 +72,7 @@
     </section>
 
     <!-- Fixed recommendation widget -->
-    <section v-if="!demoStore.loading && !demoStore.error" class="recommended-section-fixed-container">
+    <section v-if="!jobsStore.loading && !jobsStore.error" class="recommended-section-fixed-container">
       <div class="category-section recommended-section recommended-section-fixed">
         <div v-if="transcriptStore.transcriptShared" class="recommended-header">
           <h2 class="section-title recommended-title">
@@ -117,12 +117,12 @@
       </div>
     </section>
 
-    <div v-if="demoStore.loading" class="loading-state">
+    <div v-if="jobsStore.loading" class="loading-state">
       <i class="pi pi-spin pi-spinner"></i>
       <p>Loading opportunities...</p>
     </div>
 
-    <div v-else-if="demoStore.error" class="error-state">
+    <div v-else-if="jobsStore.error" class="error-state">
       <i class="pi pi-exclamation-triangle"></i>
       <p>Unable to load jobs. Please try again later.</p>
     </div>
@@ -249,16 +249,16 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useDemoStore } from '@/store/demoStore';
+import { useJobsStore } from '@/store/jobsStore';
 import { useTranscriptStore } from '@/store/transcriptStore';
 import { employerInitials } from '@/utils/employerUtils';
 import JobCard from '@/components/JobCard.vue';
 import StatusMessage from '@/components/StatusMessage.vue';
-import type { JobWithEmployer } from '@/types/demo';
+import type { JobWithEmployer } from '@/api/jobs';
 
 const router = useRouter();
 const route = useRoute();
-const demoStore = useDemoStore();
+const jobsStore = useJobsStore();
 const transcriptStore = useTranscriptStore();
 
 const showShareModal = ref(false);
@@ -337,21 +337,21 @@ const transcriptOverviewText = computed(() => {
 
 const visibleCategories = computed(() => {
   if (transcriptStore.transcriptShared) return [];
-  const cats = demoStore.categories.filter((c) => c !== 'All');
+  const cats = jobsStore.categories.filter((c) => c !== 'All');
   const jobs = filteredJobs.value;
   return cats.filter((cat) =>
-    jobs.some((j) => j.category === cat)
+    jobs.some((j) => (j.category ?? j.industry) === cat)
   );
 });
 
 const filteredJobs = computed(() => {
-  let jobs = demoStore.allJobs;
+  let jobs = jobsStore.allJobs;
   const q = ((route.query.q as string) || '').trim().toLowerCase();
   if (q) {
     jobs = jobs.filter(
       (j) =>
-        j.name.toLowerCase().includes(q) ||
-        j.employerName.toLowerCase().includes(q) ||
+        (j.name ?? j.title ?? '').toLowerCase().includes(q) ||
+        (j.employerName ?? '').toLowerCase().includes(q) ||
         (j.description && j.description.toLowerCase().includes(q))
     );
   }
@@ -359,7 +359,7 @@ const filteredJobs = computed(() => {
 });
 
 function jobsByCategory(category: string): JobWithEmployer[] {
-  return filteredJobs.value.filter((j) => j.category === category);
+  return filteredJobs.value.filter((j) => (j.category ?? j.industry) === category);
 }
 
 function goToJob(jobId: string) {

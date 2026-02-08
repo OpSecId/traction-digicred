@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
@@ -9,6 +10,8 @@ import 'primeicons/primeicons.css';
 import 'primeflex/primeflex.css';
 import './assets/style.scss';
 import { loadConfig, getAppIconUrl } from './services/configService';
+
+axios.defaults.withCredentials = true;
 
 // Load config before starting the app
 loadConfig().then(() => {

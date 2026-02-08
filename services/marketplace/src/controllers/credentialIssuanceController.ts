@@ -15,6 +15,8 @@ export interface TenantRequestForCredential {
   industry?: string;
   website?: string;
   businessAddress?: string;
+  /** Override for credentialSubject.id (e.g. did:web for tenant). When not set, uses id. */
+  subjectId?: string;
 }
 
 /** Build unsigned MarketplaceProfileCredential payload from tenant request */
@@ -26,7 +28,7 @@ export function buildMarketplaceProfileCredential(
   const validUntil = toDatetimeString(new Date(now.getFullYear(), 11, 31, 23, 59, 59));
 
   const credentialSubject: Record<string, unknown> = {
-    id: tenantRequest.id,
+    id: tenantRequest.subjectId ?? tenantRequest.id,
     type: 'Organization',
     name: tenantRequest.name,
     tenancyType: tenantRequest.tenancyType ?? 'Employer',

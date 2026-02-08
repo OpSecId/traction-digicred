@@ -16,22 +16,31 @@
 
 .marketplace-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 24px;
+  padding-bottom: 16px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
 
   @media (min-width: $breakpoint-desktop) {
     align-items: center;
+    padding-bottom: 24px;
+  }
+
+  &:has(.login-layout) {
+    padding-bottom: 0;
   }
 }
 
 .marketplace-content-inner {
   width: 100%;
   flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 
   @media (min-width: $breakpoint-desktop) {
     max-width: $content-max-width;

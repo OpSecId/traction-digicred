@@ -6,8 +6,8 @@
     </router-link>
 
     <div v-if="!employerStore.isEmployer" class="no-employer">
-      <p>Please sign in at the Marketplace Tenants Hub first.</p>
-      <router-link to="/tenant" class="action-btn primary">Go to Marketplace Tenants Hub</router-link>
+      <p>Please sign in at the Marketplace Hub first.</p>
+      <router-link to="/tenant" class="action-btn primary">Go to Marketplace Hub</router-link>
     </div>
 
     <div v-else>

@@ -22,8 +22,10 @@
         <h3>Content URL</h3>
         <p class="hint">Marketplace PWA URL (e.g. embed/channel)</p>
         <input
+          id="content-url"
           v-model="form.content_url"
           type="url"
+          name="content_url"
           placeholder="https://marketplace.example.com/embed/channel"
           class="input-wide"
         />
@@ -33,8 +35,10 @@
         <h3>Goal</h3>
         <p class="hint">Human-readable goal shown in the invitation</p>
         <input
+          id="invitation-goal"
           v-model="form.goal"
           type="text"
+          name="goal"
           placeholder="Browse jobs and opportunities from Apply Utopia"
           class="input-wide"
         />
@@ -44,8 +48,10 @@
         <h3>Image URL</h3>
         <p class="hint">Optional image for OOB invitation (QR display)</p>
         <input
+          id="image-url"
           v-model="form.image_url"
           type="url"
+          name="image_url"
           placeholder="https://marketplace.example.com/marketplace.png"
           class="input-wide"
         />
@@ -54,7 +60,7 @@
       <div class="form-section">
         <div class="checkbox-row">
           <label>
-            <input v-model="form.multi_use" type="checkbox" />
+            <input id="multi-use" v-model="form.multi_use" type="checkbox" name="multi_use" />
             Multi-use invitation
           </label>
         </div>
@@ -67,8 +73,10 @@
         <label>Invitation URL</label>
         <div class="url-row">
           <input
+            id="invitation-url-result"
             :value="result.invitation_url"
             readonly
+            name="invitation_url"
             class="input-wide url-input"
           />
           <button type="button" class="copy-btn" :class="{ copied: copyFeedback }" @click="copyUrl">

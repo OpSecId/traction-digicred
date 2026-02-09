@@ -10,10 +10,10 @@
     "build": "cd frontend && npm run build",
     "preview": "cd frontend && npm run preview",
     "start": "node dist/server.js",
-    "build:all": "cd frontend && npm run build && cd .. && tsc"
+    "build:all": "cd frontend && npm run build && cd .. && tsc && mkdir -p dist/context && cp docs/schemas/marketplace-context.jsonld dist/context/",
+    "audit:fix": "npm audit fix && cd frontend && npm audit fix"
   },
   "dependencies": {
-    "better-sqlite3": "^12.6.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.4",
@@ -22,17 +22,14 @@
     "helmet": "^8.1.0",
     "ioredis": "^5.9.2",
     "js-yaml": "^4.1.0",
-    "mongodb": "^7.1.0",
-    "pg": "^8.18.0"
+    "mongodb": "^7.1.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.13.1",
-    "@types/pg": "^8.16.0",
     "concurrently": "^9.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3",

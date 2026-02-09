@@ -186,6 +186,7 @@ import StatusMessage from '@/components/StatusMessage.vue';
 import DetailModalCard from '@/components/DetailModalCard.vue';
 import { useEmployerStore } from '@/store/employerStore';
 import { useApplicantStore } from '@/store/applicantStore';
+import { getApiErrorMessage } from '@/utils/apiError';
 import {
   listJobPostings,
   updateJobVisibility,
@@ -398,10 +399,7 @@ async function doRevoke() {
     if (idx >= 0) apiJobs.value[idx] = updated;
     employerJobStore.setJobs([...apiJobs.value]);
   } catch (err: unknown) {
-    const msg = err && typeof err === 'object' && 'response' in err
-      ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-      : null;
-    revokeError.value = msg || 'Failed to revoke job';
+    revokeError.value = getApiErrorMessage(err, 'Failed to revoke job');
   } finally {
     revoking.value = false;
   }

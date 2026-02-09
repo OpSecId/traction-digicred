@@ -273,7 +273,7 @@ function submitApplication() {
 .job-title {
   font-size: 1.4rem;
   font-weight: 700;
-  color: $marketplace-primary;
+  color: $channel-primary;
   margin: 0 0 12px 0;
   line-height: 1.3;
 }
@@ -291,7 +291,7 @@ function submitApplication() {
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: rgba(0, 51, 102, 0.06);
+  background: rgba($channel-primary, 0.06);
   border-radius: 20px;
   font-size: 0.85rem;
   color: $marketplace-text;
@@ -299,14 +299,14 @@ function submitApplication() {
 
   i {
     font-size: 0.9rem;
-    color: $marketplace-primary;
+    color: $channel-primary;
   }
 }
 
 .salary-pill {
-  background: linear-gradient(135deg, rgba(0, 51, 102, 0.08), rgba(60, 89, 115, 0.08));
+  background: linear-gradient(135deg, rgba($channel-primary, 0.1), rgba($channel-secondary, 0.1));
   font-weight: 600;
-  color: $marketplace-primary;
+  color: $channel-primary;
 }
 
 /* Job Sections */
@@ -322,13 +322,13 @@ function submitApplication() {
 
   i {
     font-size: 1.1rem;
-    color: $marketplace-primary;
+    color: $channel-primary;
   }
 
   h3 {
     font-size: 1.05rem;
     font-weight: 700;
-    color: $marketplace-primary;
+    color: $channel-primary;
     margin: 0;
   }
 }
@@ -361,7 +361,7 @@ function submitApplication() {
       flex-shrink: 0;
       margin-top: 3px;
       font-size: 0.9rem;
-      color: $marketplace-primary;
+      color: $channel-primary;
     }
   }
 }
@@ -378,9 +378,9 @@ function submitApplication() {
   align-items: center;
   gap: 10px;
   padding: 14px;
-  background: linear-gradient(135deg, rgba(0, 51, 102, 0.04), rgba(60, 89, 115, 0.04));
+  background: linear-gradient(135deg, rgba($channel-primary, 0.05), rgba($channel-accent, 0.06));
   border-radius: 12px;
-  border: 1px solid rgba(0, 51, 102, 0.08);
+  border: 1px solid rgba($channel-primary, 0.1);
   font-size: 0.9rem;
   line-height: 1.4;
   color: $marketplace-text;
@@ -388,7 +388,7 @@ function submitApplication() {
   i {
     flex-shrink: 0;
     font-size: 1rem;
-    color: $marketplace-primary;
+    color: $channel-primary;
   }
 }
 
@@ -411,8 +411,8 @@ function submitApplication() {
 .apply-btn {
   width: 100%;
   padding: 16px;
-  background: $marketplace-primary;
-  color: $marketplace-text-on-primary;
+  background: $channel-primary;
+  color: $channel-text-on-primary;
   border: none;
   border-radius: 12px;
   font-size: 1rem;
@@ -477,7 +477,7 @@ function submitApplication() {
   h3 {
     margin: 0;
     font-size: 1.25rem;
-    color: $marketplace-primary;
+    color: $channel-primary;
     flex: 1;
   }
 }
@@ -486,9 +486,9 @@ function submitApplication() {
   display: flex;
   gap: 12px;
   padding: 16px;
-  background: rgba(0, 51, 102, 0.04);
+  background: rgba($channel-primary, 0.05);
   border-radius: 12px;
-  border-left: 3px solid $marketplace-primary;
+  border-left: 3px solid $channel-primary;
   margin-bottom: 20px;
 
   .explanation-icon {
@@ -498,7 +498,7 @@ function submitApplication() {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: $marketplace-primary;
+    background: $channel-primary;
     color: white;
     border-radius: 8px;
     font-size: 1rem;
@@ -512,7 +512,7 @@ function submitApplication() {
     color: $marketplace-text;
 
     strong {
-      color: $marketplace-primary;
+      color: $channel-primary;
       font-weight: 600;
     }
   }
@@ -579,8 +579,8 @@ function submitApplication() {
   }
 
   .btn-primary {
-    background: $marketplace-primary;
-    color: $marketplace-text-on-primary;
+    background: $channel-primary;
+    color: $channel-text-on-primary;
   }
 }
 </style>

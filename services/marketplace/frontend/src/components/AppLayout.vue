@@ -1,6 +1,6 @@
 <template>
   <div class="marketplace-app">
-    <header class="marketplace-header">
+    <header v-if="!isInnkeeperRoute" class="marketplace-header">
       <div class="marketplace-header-inner">
         <div class="marketplace-header-title">
           <router-link to="/" class="header-logo-link">
@@ -47,8 +47,11 @@ const { isPending } = useRouteLoading();
 
 const route = useRoute();
 
+const isInnkeeperRoute = computed(() => route.path.startsWith('/innkeeper'));
+
 const showFooter = computed(() => {
   const p = route.path;
+  if (isInnkeeperRoute.value) return false;
   return (
     p === '/tenant' ||
     p === '/tenant/onboard' ||

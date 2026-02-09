@@ -94,6 +94,27 @@ export interface Workflow {
   errorMessage?: string;
 }
 
+export interface InnkeeperSettings {
+  agent: {
+    configured: boolean;
+    reachable: boolean;
+    status?: Record<string, unknown>;
+    walletDids?: Array<{ did: string; posture?: string; method?: string }>;
+  };
+  marketplace: {
+    baseUrl: string;
+    contextUri: string;
+    issuerId: string;
+  };
+}
+
+export async function getInnkeeperSettings(): Promise<InnkeeperSettings> {
+  const res = await axios.get<InnkeeperSettings>('/api/innkeeper/settings', {
+    timeout: API_TIMEOUT_MS,
+  });
+  return res.data;
+}
+
 export async function listTenants(): Promise<Tenant[]> {
   const res = await axios.get<{ tenants: Tenant[] }>('/api/innkeeper/tenants', {
     timeout: API_TIMEOUT_MS,

@@ -238,6 +238,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import * as adminApi from '@/api/admin';
 import DetailModalCard from '@/components/DetailModalCard.vue';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const tenants = ref<adminApi.Tenant[]>([]);
 const validTenants = computed(() => tenants.value.filter((t): t is adminApi.Tenant => t != null && t.id != null));
@@ -310,10 +311,7 @@ async function confirmRevokeSubmit() {
     closeDetailsModal();
     await refresh();
   } catch (err: unknown) {
-    const msg = err && typeof err === 'object' && 'response' in err
-      ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-      : null;
-    revokeError.value = msg || 'Failed to revoke tenant';
+    revokeError.value = getApiErrorMessage(err, 'Failed to revoke tenant');
   } finally {
     revoking.value = false;
   }
@@ -345,10 +343,7 @@ async function submitCreate() {
     closeCreateModal();
     await refresh();
   } catch (err: unknown) {
-    const msg = err && typeof err === 'object' && 'response' in err
-      ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-      : null;
-    createError.value = msg || 'Failed to create tenant';
+    createError.value = getApiErrorMessage(err, 'Failed to create tenant');
   } finally {
     creating.value = false;
   }

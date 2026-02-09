@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import * as tenantApi from '@/api/tenantRequests';
 import type { TenantRequest, TenancyType } from '@/types/demo';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 export type { TenancyType };
 
@@ -74,18 +75,10 @@ export const useTenantRequestStore = defineStore('tenantRequest', () => {
       apiRequests.value = [created, ...apiRequests.value];
       return { success: true, referenceId: created.referenceId };
     } catch (err: unknown) {
-      const axErr = err && typeof err === 'object' && 'code' in err
-        ? (err as { code?: string; message?: string })
-        : null;
-      const isTimeout = axErr?.code === 'ECONNABORTED' || axErr?.message?.includes('timeout');
-      const msg = isTimeout
-        ? 'Request timed out. Is the backend running? Ensure MongoDB is running and MONGO_URI is set.'
-        : err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { status?: number } }).response?.status === 400
-            ? 'Invalid request. Please check your input.'
-            : 'Failed to submit. Is the server running? Check backend logs.'
-          : 'Failed to submit.';
-      return { success: false, error: msg };
+      return {
+        success: false,
+        error: getApiErrorMessage(err, 'Failed to submit. Is the server running? Check backend logs.'),
+      };
     }
   }
 

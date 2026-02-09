@@ -24,6 +24,9 @@ Use `marketplace-context.jsonld` to resolve marketplace-specific terms in creden
 |------|-----|-------------|
 | MarketplaceProfileCredential | `https://marketplace.example.com/vocab#MarketplaceProfileCredential` | Credential type for approved marketplace participants |
 | JobPostingCredential | `https://marketplace.example.com/vocab#JobPostingCredential` | Credential type for verifiable job listings |
+| CourseCredential | `https://marketplace.example.com/vocab#CourseCredential` | Credential type for verifiable course listings (schema.org Course) |
+| ProgramCredential | `https://marketplace.example.com/vocab#ProgramCredential` | Credential type for verifiable program listings (schema.org EducationalOccupationalProgram) |
+| WorkBasedProgramCredential | `https://marketplace.example.com/vocab#WorkBasedProgramCredential` | Credential type for verifiable apprenticeship/work-based programs (schema.org WorkBasedProgram) |
 | ReservationCredential | `https://marketplace.example.com/vocab#ReservationCredential` | Credential type for marketplace tenancy reservations (includes KYC data) |
 | MarketplaceTenancy | `https://marketplace.example.com/vocab#MarketplaceTenancy` | The tenancy slot being reserved |
 | tenancyType | `https://marketplace.example.com/vocab#tenancyType` | Participant type: Employer, Scholarship Admin, Education Institution, Government Service |
@@ -42,6 +45,24 @@ Attests that an organization is an approved marketplace participant (employer, s
 Verifiable job listing. Uses schema.org `JobPosting`.
 
 - **credentialSubject**: `JobPosting` type with `title`, `description`, `datePosted`, `validThrough`, `employmentType`, `hiringOrganization`, `jobLocation`, `baseSalary`, `skills`, `qualifications`, `industry`
+
+### CourseCredential
+
+Verifiable course listing from education institutions. Uses schema.org [Course](https://schema.org/Course).
+
+- **credentialSubject**: `Course` type with `name`, `description`, `courseCode`, `numberOfCredits`, `coursePrerequisites`, `educationalCredentialAwarded`, `provider`, `hasCourseInstance` (array of CourseInstance with `courseMode`, `startDate`, `endDate`, `location`)
+
+### ProgramCredential
+
+Verifiable degree or certificate program listing. Uses schema.org [EducationalOccupationalProgram](https://schema.org/EducationalOccupationalProgram).
+
+- **credentialSubject**: `EducationalOccupationalProgram` type with `name`, `description`, `url`, `applicationStartDate`, `applicationDeadline`, `educationalProgramMode`, `educationalCredentialAwarded`, `numberOfCredits`, `timeToComplete`, `provider`, `programPrerequisites`, `maximumEnrollment`, `offers` (tuition/fees)
+
+### WorkBasedProgramCredential
+
+Verifiable apprenticeship or work-based training program. Uses schema.org [WorkBasedProgram](https://schema.org/WorkBasedProgram).
+
+- **credentialSubject**: `WorkBasedProgram` type with `name`, `description`, `occupationalCategory`, `occupationalCredentialAwarded`, `trainingSalary`, `salaryUponCompletion`, `provider`, `timeToComplete`
 
 ### ReservationCredential
 

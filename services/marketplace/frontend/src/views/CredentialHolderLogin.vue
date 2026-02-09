@@ -99,7 +99,7 @@ onMounted(async () => {
   h2 {
     font-size: 1.35rem;
     font-weight: 700;
-    color: #5b21b6;
+    color: $channel-primary;
     margin: 0 0 8px 0;
   }
 
@@ -113,8 +113,8 @@ onMounted(async () => {
 
 .holder-no-invitation {
   padding: 20px;
-  background: rgba(91, 33, 182, 0.06);
-  border: 1px solid rgba(91, 33, 182, 0.2);
+  background: rgba($channel-primary, 0.06);
+  border: 1px solid rgba($channel-primary, 0.2);
   border-radius: 10px;
 }
 
@@ -130,7 +130,7 @@ onMounted(async () => {
   i {
     flex-shrink: 0;
     font-size: 1.25rem;
-    color: #5b21b6;
+    color: $channel-primary;
     margin-top: 2px;
   }
 }

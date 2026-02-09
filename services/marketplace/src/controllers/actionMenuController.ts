@@ -21,7 +21,7 @@ const DEFAULT_CONFIG: ActionMenuConfig = {
     { title: 'Share transcript', description: 'Share your transcript credential for job matching' },
     { title: 'Browse jobs', description: 'Discover jobs that match your skills' },
   ],
-  presentationRequestCredentialTypes: ['CollegeTranscript', 'HighSchoolTranscript', 'Diploma', 'StudentCard'],
+  presentationRequestCredentialTypes: [],
 };
 
 function getConfigPath(): string {

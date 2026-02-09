@@ -17,7 +17,7 @@
           </button>
         </div>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" :class="{ 'modal-body--json': showJson && hasCredential }">
         <template v-if="!showJson">
           <slot name="details"> </slot>
         </template>
@@ -104,16 +104,19 @@ async function copyCredential() {
 }
 
 .modal-content {
+  display: flex;
+  flex-direction: column;
   background: $marketplace-bg-card;
   border-radius: 12px;
   max-width: 680px;
   width: 100%;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -181,10 +184,21 @@ async function copyCredential() {
 }
 
 .modal-body {
+  flex: 1;
+  min-height: 0;
   padding: 20px;
+  overflow-y: auto;
+
+  &.modal-body--json {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 20px;
+  }
 }
 
 .modal-actions {
+  flex-shrink: 0;
   display: flex;
   gap: 12px;
   padding: 16px 20px;
@@ -201,13 +215,19 @@ async function copyCredential() {
 .raw-viewer-full {
   display: flex;
   flex-direction: column;
-  height: 420px;
+  flex: 1;
+  min-height: 0;
 
   .raw-content {
     flex: 1;
     min-height: 0;
     overflow: auto;
   }
+}
+
+.modal-body--json .raw-viewer-full {
+  flex: 1;
+  min-height: 0;
 }
 
 .raw-toolbar {
@@ -256,10 +276,8 @@ async function copyCredential() {
   }
 }
 
-.raw-content {
+.raw-viewer-full .raw-content {
   background: #1a1a1a;
-  max-height: 320px;
-  overflow: auto;
 }
 
 .credential-json {

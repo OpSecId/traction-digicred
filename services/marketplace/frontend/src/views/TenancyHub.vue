@@ -204,6 +204,7 @@ import DetailModalCard from '@/components/DetailModalCard.vue';
 import { useEmployerStore } from '@/store/employerStore';
 import { tenantLogin, tenantLogout } from '@/api/auth';
 import { getEmployerProfile, listJobPostings, listEmployerWorkflows, profileSubjectFromCredential, emailFromSubject } from '@/api/employerJobs';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const route = useRoute();
 const router = useRouter();
@@ -316,13 +317,10 @@ async function handleLogin() {
     const { employerId } = await tenantLogin(email, apiKey);
     employerStore.setEmployer(employerId);
   } catch (err: unknown) {
-    const msg =
-      err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { status?: number; data?: { error?: string } } }).response?.status === 401
-          ? 'Invalid email or API key'
-          : 'Sign in failed. Is the server running?'
-        : 'Sign in failed.';
-    loginError.value = msg;
+    loginError.value = getApiErrorMessage(err, {
+      fallback: 'Sign in failed.',
+      unauthMessage: 'Invalid email or API key',
+    });
   } finally {
     loggingIn.value = false;
   }

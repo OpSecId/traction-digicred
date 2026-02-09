@@ -5,7 +5,11 @@
         <button type="button" class="menu-toggle" aria-label="Toggle menu" @click="sidebarOpen = !sidebarOpen">
           <i class="pi pi-bars"></i>
         </button>
-        <h1 class="admin-title">Innkeeper's Desk</h1>
+        <router-link to="/" class="admin-header-brand">
+          <img :src="headerLogoUrl" alt="" class="admin-header-logo" />
+          <span class="admin-header-title">Apply Utopia</span>
+          <span class="admin-header-badge">Innkeeper's Desk</span>
+        </router-link>
         <button type="button" class="sign-out-btn" @click="handleSignOut">
           <i class="pi pi-sign-out"></i>
           <span class="sign-out-label">Sign out</span>
@@ -58,6 +62,9 @@ import { useRouteLoading } from '@/composables/useRouteLoading';
 import { useAdminStore } from '@/store/adminStore';
 import { useTenantRequestStore } from '@/store/tenantRequestStore';
 import { innkeeperLogout } from '@/api/auth';
+import { getAppIconUrl } from '@/services/configService';
+
+const headerLogoUrl = getAppIconUrl();
 
 const route = useRoute();
 const router = useRouter();
@@ -80,6 +87,7 @@ const navGroups = computed(() => [
     items: [
       { path: '/innkeeper/trust-registries', label: 'Trust registry', icon: 'pi-shield' },
       { path: '/innkeeper/workflows', label: 'Configure workflow', icon: 'pi-sitemap' },
+      { path: '/innkeeper/settings', label: 'Settings', icon: 'pi-cog' },
     ],
   },
   {
@@ -122,13 +130,20 @@ async function handleSignOut() {
 }
 
 .admin-header {
-  background: $marketplace-bg-card;
-  border-bottom: 1px solid $marketplace-panel-border;
+  background: linear-gradient(135deg, $marketplace-primary 0%, $marketplace-secondary 100%);
+  color: $marketplace-text-on-primary;
   padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0));
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 2px 16px rgba(0, 51, 102, 0.2);
+
+  @media (min-width: $breakpoint-desktop) {
+    padding: 14px 24px;
+    box-shadow: 0 2px 20px rgba(0, 51, 102, 0.15);
+  }
 }
 
 .admin-header-inner {
@@ -148,14 +163,14 @@ async function handleSignOut() {
   padding: 0;
   border: none;
   background: transparent;
-  color: $marketplace-text-muted;
+  color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 
   &:hover {
-    background: rgba(0, 51, 102, 0.06);
-    color: $marketplace-primary;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
   }
 
   @media (min-width: $breakpoint-desktop) {
@@ -163,12 +178,49 @@ async function handleSignOut() {
   }
 }
 
-.admin-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: $marketplace-primary;
-  margin: 0;
+.admin-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.admin-header-logo {
+  height: 26px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  flex-shrink: 0;
+}
+
+.admin-header-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: white;
+  white-space: nowrap;
+}
+
+.admin-header-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 20px;
+  margin-left: 4px;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 }
 
 .sign-out-btn {
@@ -178,16 +230,16 @@ async function handleSignOut() {
   padding: 8px 14px;
   font-size: 0.9rem;
   font-weight: 600;
-  border-radius: 8px;
-  border: 1px solid $marketplace-panel-border;
-  background: transparent;
-  color: $marketplace-text-muted;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.2s, border-color 0.2s;
 
   &:hover {
-    background: rgba(0, 51, 102, 0.06);
-    color: $marketplace-primary;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
   }
 }
 

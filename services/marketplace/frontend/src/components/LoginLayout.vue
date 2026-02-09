@@ -89,7 +89,7 @@ defineProps<{
   }
 
   .login-layout--holder & {
-    background: linear-gradient(145deg, #5b21b6 0%, #7c3aed 40%, #a78bfa 100%);
+    background: linear-gradient(145deg, #b45309 0%, #ea580c 40%, #fbbf24 100%);
   }
 }
 
@@ -121,7 +121,7 @@ defineProps<{
 
   .login-layout--holder & {
     background-image: radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(253, 224, 71, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.2) 0%, transparent 40%),
       repeating-linear-gradient(
         -45deg,
         transparent,
@@ -219,8 +219,8 @@ defineProps<{
     }
 
     .login-layout--holder & i {
-      background: rgba(253, 224, 71, 0.4);
-      color: #fbbf24;
+      background: rgba(255, 255, 255, 0.25);
+      color: #fef3c7;
     }
 
     @media (min-width: 900px) {
@@ -251,8 +251,8 @@ defineProps<{
 
   .login-layout--holder & {
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.06), transparent),
-      linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%);
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(234, 88, 12, 0.08), transparent),
+      linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
   }
 }
 

@@ -1,4 +1,5 @@
 @use 'variables.scss' as *;
+@use 'shared';
 
 // Shared styles for main app pages (tenant flow, reservation, check reservation)
 // Excludes: channel pages, admin pages (they use admin-common)
@@ -29,27 +30,6 @@
       width: 100%;
       min-width: 0;
     }
-  }
-}
-
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: $marketplace-text-muted;
-  font-size: 0.85rem;
-  font-weight: 500;
-  font-family: inherit;
-  margin-bottom: 12px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: color 0.2s;
-
-  &:hover {
-    color: $marketplace-primary;
   }
 }
 

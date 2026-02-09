@@ -57,6 +57,7 @@ import { useRoute, useRouter } from 'vue-router';
 import LoginLayout from '@/components/LoginLayout.vue';
 import { useAdminStore } from '@/store/adminStore';
 import { innkeeperLogin } from '@/api/auth';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const route = useRoute();
 const router = useRouter();
@@ -89,25 +90,10 @@ async function handleLogin() {
     await router.replace(redirect);
   } catch (err: unknown) {
     console.error('[InnkeeperLogin] Error:', err);
-    const ax = err && typeof err === 'object' ? (err as { response?: { status?: number; data?: { error?: string } }; message?: string }) : null;
-    const status = ax?.response?.status;
-    const backendError = ax?.response?.data?.error;
-    const isServerUnavailable =
-      !ax?.response ||
-      ax?.message === 'Network Error' ||
-      (status && status >= 500) ||
-      status === 502 ||
-      status === 503 ||
-      status === 504;
-    const msg =
-      status === 401
-        ? 'Invalid email or password'
-        : backendError
-          ? backendError
-          : isServerUnavailable
-            ? 'Sign in failed. Is the server running? Run: npm run dev'
-            : 'Sign in failed.';
-    loginError.value = msg;
+    loginError.value = getApiErrorMessage(err, {
+      fallback: 'Sign in failed.',
+      unauthMessage: 'Invalid email or password',
+    });
   } finally {
     loggingIn.value = false;
   }

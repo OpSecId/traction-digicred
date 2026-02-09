@@ -28,11 +28,10 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Reservation ID</th>
-            <th>Tenancy type</th>
+            <th>ID</th>
+            <th>Type</th>
             <th>Organization</th>
             <th>Contact</th>
-            <th>Industry</th>
             <th>Submitted</th>
             <th>Status</th>
             <th class="cell-actions">Actions</th>
@@ -54,18 +53,13 @@
               </span>
             </td>
             <td>
-              <strong>{{ req.name }}</strong>
-              <br />
-              <span class="text-muted text-small">{{ req.email }}</span>
+              <span class="org-name">{{ req.name }}</span>
+              <span class="org-email">{{ req.email }}</span>
             </td>
             <td>
-              <span v-if="req.contactName">
-                {{ req.contactName }}{{ req.contactTitle ? ` (${req.contactTitle})` : '' }}
+              <span v-if="req.contactName" class="contact-cell">
+                {{ req.contactName }}{{ req.contactTitle ? ` · ${req.contactTitle}` : '' }}{{ req.industry ? ` · ${req.industry}` : '' }}
               </span>
-              <span v-else class="text-muted">—</span>
-            </td>
-            <td>
-              <span v-if="req.industry">{{ req.industry }}</span>
               <span v-else class="text-muted">—</span>
             </td>
             <td>{{ formatDate(req.submittedAt) }}</td>
@@ -76,36 +70,27 @@
               <span v-else class="status-badge pending">Pending</span>
             </td>
             <td class="cell-actions" @click.stop>
-              <div class="actions-wrap">
+              <div class="actions-group">
+                <button type="button" class="btn-icon" title="View" @click="openDetail(req)">
+                  <i class="pi pi-eye"></i>
+                </button>
                 <template v-if="req.status === 'pending'">
-                  <button type="button" class="btn-view" @click="openDetail(req)">
-                    <i class="pi pi-eye"></i>
-                    View
-                  </button>
-                  <button type="button" class="btn-reject" @click="rejectRequest(req.id)">
+                  <button type="button" class="btn-icon btn-icon-reject" title="Reject" @click="rejectRequest(req.id)">
                     <i class="pi pi-times"></i>
-                    Reject
                   </button>
-                  <button type="button" class="btn-approve" @click="approveRequest(req.id)">
+                  <button type="button" class="btn-icon btn-icon-approve" title="Approve" @click="approveRequest(req.id)">
                     <i class="pi pi-check"></i>
-                    Approve
                   </button>
                 </template>
-                <template v-else>
-                  <button type="button" class="btn-view" @click="openDetail(req)">
-                    <i class="pi pi-eye"></i>
-                    View
-                  </button>
-                  <button
-                    v-if="req.status === 'approved' && tenantByRequestId[req.id]"
-                    type="button"
-                    class="btn-revoke"
-                    @click="confirmRevoke(tenantByRequestId[req.id].id)"
-                  >
-                    <i class="pi pi-ban"></i>
-                    Revoke
-                  </button>
-                </template>
+                <button
+                  v-else-if="req.status === 'approved' && tenantByRequestId[req.id]"
+                  type="button"
+                  class="btn-icon btn-icon-revoke"
+                  title="Revoke"
+                  @click="confirmRevoke(tenantByRequestId[req.id].id)"
+                >
+                  <i class="pi pi-ban"></i>
+                </button>
               </div>
             </td>
           </tr>
@@ -429,9 +414,9 @@ function tenancyTypeClass(type: TenancyType | undefined) {
   }
 
   .type-badge {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-radius: 20px;
     text-transform: uppercase;
     white-space: nowrap;
@@ -460,7 +445,7 @@ function tenancyTypeClass(type: TenancyType | undefined) {
   .status-badge {
     font-size: 0.7rem;
     font-weight: 600;
-    padding: 4px 8px;
+    padding: 2px 8px;
     border-radius: 6px;
 
     &.pending {
@@ -479,19 +464,85 @@ function tenancyTypeClass(type: TenancyType | undefined) {
     }
   }
 
+  /* Compact table rows */
+  .admin-table th,
+  .admin-table td {
+    padding: 8px 12px;
+    font-size: 0.875rem;
+  }
+
+  .org-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .org-email {
+    display: block;
+    font-size: 0.75rem;
+    color: $marketplace-text-muted;
+  }
+
+  .contact-cell {
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+  }
+
   .cell-actions {
-    min-width: 180px;
+    min-width: 100px;
     white-space: nowrap;
   }
 
-  .actions-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+  .actions-group {
+    display: inline-flex;
     align-items: center;
+    gap: 4px;
   }
 
-  .btn-view,
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    border: 1px solid $marketplace-panel-border;
+    background: rgba(0, 0, 0, 0.02);
+    color: $marketplace-text-muted;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+
+    &:hover {
+      background: rgba(0, 51, 102, 0.06);
+      color: $marketplace-primary;
+      border-color: rgba(0, 51, 102, 0.2);
+    }
+  }
+
+  .btn-icon-reject:hover {
+    background: rgba(248, 73, 73, 0.08);
+    color: $marketplace-danger;
+    border-color: rgba(248, 73, 73, 0.3);
+  }
+
+  .btn-icon-approve:hover {
+    background: rgba(51, 108, 55, 0.12);
+    color: $marketplace-success;
+    border-color: rgba(51, 108, 55, 0.3);
+  }
+
+  .btn-icon-revoke:hover {
+    background: rgba(207, 150, 5, 0.1);
+    color: $marketplace-warning;
+    border-color: rgba(207, 150, 5, 0.4);
+  }
+
+  /* Modal action buttons (keep full-size) */
   .btn-approve,
   .btn-reject,
   .btn-revoke {
@@ -505,12 +556,6 @@ function tenancyTypeClass(type: TenancyType | undefined) {
     cursor: pointer;
     border: none;
     transition: opacity 0.2s;
-  }
-
-  .btn-view {
-    background: transparent;
-    color: $marketplace-primary;
-    border: 1px solid rgba(0, 51, 102, 0.3);
   }
 
   .btn-approve {
@@ -528,10 +573,10 @@ function tenancyTypeClass(type: TenancyType | undefined) {
     background: transparent;
     color: $marketplace-warning;
     border: 1px solid rgba(207, 150, 5, 0.5);
-  }
 
-  .btn-revoke:hover {
-    background: rgba(207, 150, 5, 0.1);
+    &:hover {
+      background: rgba(207, 150, 5, 0.1);
+    }
   }
 }
 

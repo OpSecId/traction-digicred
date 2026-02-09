@@ -15,8 +15,8 @@ COPY . .
 # Build frontend
 RUN cd frontend && npm run build
 
-# Compile backend
-RUN npx tsc
+# Compile backend and bundle JSON-LD context
+RUN npx tsc && mkdir -p dist/context && cp docs/schemas/marketplace-context.jsonld dist/context/
 
 # Runtime stage
 FROM node:22-alpine

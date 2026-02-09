@@ -167,6 +167,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import * as adminApi from '@/api/admin';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 type CourseEntry = [string, string];
 
@@ -230,8 +231,7 @@ async function analyze() {
     const data = await adminApi.analyzeTranscriptSkills(entries);
     result.value = data;
   } catch (err: unknown) {
-    const ax = err as { response?: { data?: { error?: string }; status?: number } };
-    analysisError.value = ax?.response?.data?.error ?? 'Failed to analyze transcript skills';
+    analysisError.value = getApiErrorMessage(err, 'Failed to analyze transcript skills');
   } finally {
     analyzing.value = false;
   }

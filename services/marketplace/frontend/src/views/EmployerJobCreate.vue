@@ -223,6 +223,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEmployerStore } from '@/store/employerStore';
 import { createJobPosting, getEmployerProfile, profileSubjectFromCredential, emailFromSubject } from '@/api/employerJobs';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const router = useRouter();
 const employerStore = useEmployerStore();
@@ -325,11 +326,7 @@ async function submitJob() {
     });
     router.push('/tenant/jobs');
   } catch (err: unknown) {
-    const msg =
-      err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error ?? 'Failed to create job posting'
-        : 'Failed to create job posting';
-    submitError.value = msg;
+    submitError.value = getApiErrorMessage(err, 'Failed to create job posting');
   } finally {
     submitting.value = false;
   }

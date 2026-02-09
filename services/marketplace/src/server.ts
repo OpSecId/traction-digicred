@@ -47,6 +47,9 @@ import {
 const app = express();
 const PORT = Number(process.env.PORT) || 5174;
 
+// Trust proxy when behind reverse proxy (Railway, nginx, etc.) so X-Forwarded-For is used correctly
+app.set('trust proxy', 1);
+
 /** Normalize route param to string (Express can type as string | string[]). */
 function param(req: express.Request, name: string): string {
   const v = req.params[name];
@@ -391,6 +394,11 @@ app.patch('/api/tenant-requests/:id', asyncHandler(async (req, res) => {
     console.log('Stored MarketplaceProfileCredential for', underName?.name ?? upd.name);
   }
   res.json({ ...updated, apiKey });
+}));
+
+// Innkeeper: settings (agent + marketplace config)
+app.get('/api/innkeeper/settings', asyncHandler(async (_req, res) => {
+  res.json(await adminController.getSettings());
 }));
 
 // Innkeeper: tenants - MongoDB
@@ -898,12 +906,17 @@ app.get('/tenants/:shortId/did.json', asyncHandler(async (req, res) => {
 
 // JSON-LD context for marketplace credentials
 app.get('/ns/marketplace/v1', (_req, res) => {
-  const contextPath = path.join(__dirname, '../docs/schemas/marketplace-context.jsonld');
+  // Prefer bundled path (dist/context/) — works when only dist/ is deployed
+  const bundledPath = path.join(__dirname, 'context/marketplace-context.jsonld');
+  const fallbackPath = path.join(__dirname, '../docs/schemas/marketplace-context.jsonld');
+  const contextPath = fs.existsSync(bundledPath) ? bundledPath : fallbackPath;
   if (!fs.existsSync(contextPath)) {
+    console.error('Marketplace context not found at', bundledPath, 'or', fallbackPath);
     res.status(404).json({ error: 'Context file not found' });
     return;
   }
   res.setHeader('Content-Type', 'application/ld+json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.sendFile(contextPath);
 });
 

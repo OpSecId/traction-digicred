@@ -23,6 +23,12 @@ const routes = [
         meta: { title: 'Marketplace', nav: 'landing' },
       },
       {
+        path: 'reservation',
+        name: 'TenancyReservationHub',
+        component: () => import('@/views/TenancyReservationHub.vue'),
+        meta: { title: 'Tenancy Reservation | Marketplace' },
+      },
+      {
         path: 'reservation/check',
         name: 'CheckReservation',
         component: () => import('@/views/CheckReservation.vue'),
@@ -63,6 +69,12 @@ const routes = [
             name: 'AdminWorkflows',
             component: () => import('@/views/admin/AdminActionMenu.vue'),
             meta: { title: "Configure workflow | Innkeeper's Desk" },
+          },
+          {
+            path: 'settings',
+            name: 'AdminSettings',
+            component: () => import('@/views/admin/AdminSettings.vue'),
+            meta: { title: "Settings | Innkeeper's Desk" },
           },
           {
             path: 'marketplace',

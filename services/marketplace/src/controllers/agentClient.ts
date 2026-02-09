@@ -17,10 +17,18 @@ export async function agentRequest<T = unknown>(
 ): Promise<T> {
   const { uri, apiKey, bearerToken } = config;
   if (!uri) {
-    throw new Error('Agent URI not configured');
+    throw new Error('Agent URI not configured (set MARKETPLACE_AGENCY_URI)');
   }
 
-  const url = `${uri.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
+  const base = uri.replace(/\/$/, '');
+  const url = `${base}${path.startsWith('/') ? path : `/${path}`}`;
+  try {
+    new URL(url);
+  } catch {
+    throw new Error(
+      `Invalid MARKETPLACE_AGENCY_URI: "${uri}" contains invalid characters (e.g. spaces). Use a valid URL like https://your-agent.railway.app`
+    );
+  }
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),

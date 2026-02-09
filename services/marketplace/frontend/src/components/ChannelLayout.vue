@@ -33,19 +33,17 @@
       </router-view>
     </main>
 
-    <!-- Bottom tab bar (Uber Eats style) — floating round icon buttons -->
+    <!-- Bottom nav — separate floating circle icons, sticky -->
     <nav v-if="!isJobDetail" class="channel-bottom-nav">
       <router-link
         v-for="item in bottomTabs"
         :key="item.path"
         :to="item.path"
-        class="nav-tab"
+        class="nav-dot"
         :class="{ active: isTabActive(item) }"
+        :aria-label="item.label"
       >
-        <span class="nav-tab-icon-wrap">
-          <i :class="['pi', item.icon, 'nav-icon']"></i>
-        </span>
-        <span class="nav-label">{{ item.label }}</span>
+        <i :class="['pi', item.icon]"></i>
       </router-link>
     </nav>
   </div>
@@ -115,8 +113,8 @@ function isTabActive(item: { path: string }) {
 .channel-header {
   flex-shrink: 0;
   padding: 14px 16px 16px;
-  background: linear-gradient(135deg, $marketplace-primary 0%, $marketplace-secondary 100%);
-  box-shadow: 0 2px 12px rgba(0, 51, 102, 0.15);
+  background: linear-gradient(135deg, $channel-primary 0%, $channel-secondary 100%);
+  box-shadow: 0 2px 12px rgba(194, 65, 12, 0.2);
 }
 
 .channel-logo-link {
@@ -178,7 +176,7 @@ function isTabActive(item: { path: string }) {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 90px; /* Space for floating bottom nav */
+  padding-bottom: 96px; /* Space for floating bottom nav */
 }
 
 .loading-placeholder {
@@ -196,59 +194,48 @@ function isTabActive(item: { path: string }) {
 }
 
 .channel-bottom-nav {
-  flex-shrink: 0;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-items: center;
-  gap: 4px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0));
-  margin: 0 12px 12px;
-  background: $marketplace-bg-card;
-  border-radius: 28px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
-  border: 1px solid $marketplace-panel-border;
+  gap: 16px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0));
+  margin: 0 16px 16px;
+  z-index: 50;
 }
 
-.nav-tab {
+.nav-dot {
+  width: 52px;
+  height: 52px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  text-decoration: none;
+  justify-content: center;
+  border-radius: 50%;
+  background: $marketplace-bg-card;
   color: $marketplace-text-muted;
-  font-size: 0.7rem;
-  font-weight: 500;
-  transition: color 0.2s, background 0.2s;
-  border-radius: 24px;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border: 1px solid $marketplace-panel-border;
+  transition: transform 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
+
+  i {
+    font-size: 1.25rem;
+  }
 
   &:hover {
-    color: $marketplace-primary;
+    color: $channel-primary;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(194, 65, 12, 0.25);
   }
 
   &.active {
-    color: $marketplace-primary;
-
-    .nav-tab-icon-wrap {
-      background: rgba(0, 51, 102, 0.12);
-      color: $marketplace-primary;
-    }
-  }
-
-  .nav-tab-icon-wrap {
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: transparent;
-    color: $marketplace-text-muted;
-    transition: background 0.2s, color 0.2s;
-  }
-
-  .nav-icon {
-    font-size: 1.2rem;
+    background: $channel-primary;
+    color: white;
+    border-color: $channel-primary;
+    box-shadow: 0 4px 16px rgba(194, 65, 12, 0.4);
   }
 }
 </style>

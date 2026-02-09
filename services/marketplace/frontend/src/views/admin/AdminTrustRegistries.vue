@@ -79,8 +79,22 @@
             <h4 class="wizard-title">Credential types</h4>
             <p class="wizard-desc">Which credential types can this issuer provide?</p>
             <div class="form-row">
-              <label>Credential types (comma-separated)</label>
-              <input id="add-entry-credential-types" v-model="addEntryForm.credentialTypesStr" type="text" name="credentialTypes" placeholder="e.g. CollegeTranscript, Diploma, HighSchoolTranscript" />
+              <label>Credential types</label>
+              <div class="credential-types-select">
+                <label
+                  v-for="opt in credentialTypeOptions"
+                  :key="opt.id"
+                  class="credential-type-checkbox"
+                >
+                  <input
+                    type="checkbox"
+                    :value="opt.id"
+                    :checked="addEntryForm.credentialTypes.includes(opt.id)"
+                    @change="toggleCredentialType(opt.id)"
+                  />
+                  <span>{{ opt.label }}</span>
+                </label>
+              </div>
             </div>
           </div>
           <div v-show="addEntryStep === 4" class="wizard-panel">
@@ -223,15 +237,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import * as adminApi from '@/api/admin';
 import { getAppDomain } from '@/services/configService';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const CREDENTIAL_CATEGORIES = [
   { id: 'k12', label: 'K-12', types: ['HighSchoolTranscript'] },
   { id: 'college', label: 'College', types: ['CollegeTranscript'] },
   { id: 'university', label: 'University', types: ['StudentCard', 'Diploma'] },
 ] as const;
+
+/** Credential types available per entry type (category). */
+const CREDENTIAL_TYPES_BY_ENTRY_TYPE: Record<string, Array<{ id: string; label: string }>> = {
+  EducationInstitution: [
+    { id: 'HighSchoolTranscript', label: 'High School Transcript' },
+    { id: 'CollegeTranscript', label: 'College Transcript' },
+    { id: 'StudentCard', label: 'Student Card' },
+    { id: 'Diploma', label: 'Diploma' },
+  ],
+  Employer: [
+    { id: 'EmploymentCredential', label: 'Employment Credential' },
+    { id: 'ProfessionalReference', label: 'Professional Reference' },
+  ],
+};
 
 const ADD_ENTRY_STEPS = [
   { id: 'basic', label: 'Basic' },
@@ -256,10 +285,29 @@ const addEntryForm = reactive({
   name: '',
   type: 'EducationInstitution',
   did: '',
-  credentialTypesStr: '',
+  credentialTypes: [] as string[],
   website: '',
   logo: '',
 });
+
+const credentialTypeOptions = computed(() =>
+  CREDENTIAL_TYPES_BY_ENTRY_TYPE[addEntryForm.type] ?? []
+);
+
+function toggleCredentialType(typeId: string) {
+  const arr = addEntryForm.credentialTypes;
+  const idx = arr.indexOf(typeId);
+  if (idx >= 0) arr.splice(idx, 1);
+  else arr.push(typeId);
+}
+
+// Reset credential selections when entry type changes
+watch(
+  () => addEntryForm.type,
+  () => {
+    addEntryForm.credentialTypes = [];
+  }
+);
 const showInvitationModal = ref(false);
 const creating = ref(false);
 const copyFeedback = ref(false);
@@ -310,7 +358,7 @@ function closeAddEntryModal() {
   addEntryForm.name = '';
   addEntryForm.type = 'EducationInstitution';
   addEntryForm.did = '';
-  addEntryForm.credentialTypesStr = '';
+  addEntryForm.credentialTypes = [];
   addEntryForm.website = '';
   addEntryForm.logo = '';
 }
@@ -320,23 +368,18 @@ async function addEntry() {
   if (!addEntryForm.name.trim()) return;
   addingEntry.value = true;
   try {
-    const credentialTypes = addEntryForm.credentialTypesStr
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
     await adminApi.addTrustRegistryEntry({
       name: addEntryForm.name.trim(),
       type: addEntryForm.type,
       ...(addEntryForm.did.trim() ? { did: addEntryForm.did.trim() } : {}),
-      ...(credentialTypes.length ? { credentialTypes } : {}),
+      ...(addEntryForm.credentialTypes.length ? { credentialTypes: [...addEntryForm.credentialTypes] } : {}),
       ...(addEntryForm.website.trim() ? { website: addEntryForm.website.trim() } : {}),
       ...(addEntryForm.logo.trim() ? { logo: addEntryForm.logo.trim() } : {}),
     });
     closeAddEntryModal();
     await refresh();
   } catch (err: unknown) {
-    const ax = err && typeof err === 'object' && 'response' in err ? err as { response?: { data?: { error?: string } } } : null;
-    addEntryError.value = ax?.response?.data?.error ?? 'Failed to add entry';
+    addEntryError.value = getApiErrorMessage(err, 'Failed to add entry');
   } finally {
     addingEntry.value = false;
   }
@@ -356,8 +399,7 @@ async function createInvitation() {
     invitationResult.value = res;
   } catch (err: unknown) {
     console.error('Create invitation error:', err);
-    const ax = err && typeof err === 'object' && 'response' in err ? err as { response?: { data?: { error?: string } } } : null;
-    const msg = ax?.response?.data?.error ?? 'Failed to create invitation. Ensure MARKETPLACE_AGENCY_URI is configured and the agency is reachable.';
+    const msg = getApiErrorMessage(err, 'Failed to create invitation. Ensure MARKETPLACE_AGENCY_URI is configured and the agency is reachable.');
     alert(msg);
   } finally {
     creating.value = false;
@@ -620,6 +662,30 @@ onMounted(() => refresh());
       display: inline-flex;
       align-items: center;
       gap: 8px;
+      cursor: pointer;
+    }
+  }
+
+  .credential-types-select {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0;
+  }
+
+  .credential-type-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: $marketplace-text;
+
+    input[type='checkbox'] {
+      width: 18px;
+      height: 18px;
+      accent-color: $marketplace-primary;
       cursor: pointer;
     }
   }

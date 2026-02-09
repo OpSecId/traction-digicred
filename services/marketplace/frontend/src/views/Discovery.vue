@@ -382,7 +382,7 @@ function goToJob(jobId: string) {
 }
 
 .hero-banner {
-  @include hero.hero-banner;
+  @include hero.hero-banner-channel;
 }
 
 .hero-content {
@@ -406,7 +406,7 @@ function goToJob(jobId: string) {
   background: $marketplace-bg;
   margin: 0 -16px;
   padding: 12px 16px 8px;
-  border-bottom: 1px solid rgba(0, 51, 102, 0.06);
+  border-bottom: 1px solid rgba($channel-primary, 0.08);
 }
 
 .results-section {
@@ -423,8 +423,8 @@ function goToJob(jobId: string) {
 .transcript-overview-card {
   background: white;
   border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 51, 102, 0.08), 0 2px 8px rgba(0, 51, 102, 0.04);
-  border: 1px solid rgba(0, 51, 102, 0.08);
+  box-shadow: 0 4px 24px rgba($channel-primary, 0.1), 0 2px 8px rgba($channel-primary, 0.06);
+  border: 1px solid rgba($channel-primary, 0.1);
   overflow: hidden;
   position: relative;
 
@@ -435,7 +435,7 @@ function goToJob(jobId: string) {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, $marketplace-primary 0%, $marketplace-accent-alt 100%);
+    background: linear-gradient(90deg, $channel-primary 0%, $channel-accent 100%);
     opacity: 0.9;
   }
 }
@@ -470,17 +470,17 @@ function goToJob(jobId: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(0, 51, 102, 0.1) 0%, rgba(102, 102, 204, 0.12) 100%);
+  background: linear-gradient(135deg, rgba($channel-primary, 0.12) 0%, rgba($channel-accent, 0.15) 100%);
   border-radius: 12px;
   font-size: 1.25rem;
-  color: $marketplace-primary;
+  color: $channel-primary;
   flex-shrink: 0;
 }
 
 .transcript-overview-title {
   font-size: 1.15rem;
   font-weight: 700;
-  color: $marketplace-primary;
+  color: $channel-primary;
   margin: 0;
   letter-spacing: -0.02em;
   line-height: 1.3;
@@ -496,7 +496,7 @@ function goToJob(jobId: string) {
 
 .transcript-details {
   padding: 0 20px 20px;
-  border-top: 1px solid rgba(0, 51, 102, 0.08);
+  border-top: 1px solid rgba($channel-primary, 0.1);
   margin-top: 4px;
   padding-top: 16px;
 }
@@ -521,7 +521,7 @@ function goToJob(jobId: string) {
 }
 
 .transcript-detail-value {
-  color: $marketplace-primary;
+  color: $channel-primary;
   font-weight: 600;
   text-align: right;
 }
@@ -533,7 +533,7 @@ function goToJob(jobId: string) {
 .transcript-courses-title {
   font-size: 0.85rem;
   font-weight: 700;
-  color: $marketplace-primary;
+  color: $channel-primary;
   margin: 0 0 10px 0;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -554,9 +554,9 @@ function goToJob(jobId: string) {
   gap: 10px;
   font-size: 0.875rem;
   padding: 8px 10px;
-  background: rgba(0, 51, 102, 0.04);
+  background: rgba($channel-primary, 0.04);
   border-radius: 8px;
-  border: 1px solid rgba(0, 51, 102, 0.06);
+  border: 1px solid rgba($channel-primary, 0.08);
 }
 
 .transcript-course-name {
@@ -566,7 +566,7 @@ function goToJob(jobId: string) {
 }
 
 .transcript-course-grade {
-  color: $marketplace-primary;
+  color: $channel-primary;
   font-weight: 600;
   min-width: 2ch;
 }
@@ -580,7 +580,7 @@ function goToJob(jobId: string) {
 .category-section {
   margin-bottom: 32px;
   padding-bottom: 32px;
-  border-bottom: 1px solid rgba(0, 51, 102, 0.06);
+  border-bottom: 1px solid rgba($channel-primary, 0.08);
 
   &:last-child {
     margin-bottom: 0;
@@ -633,23 +633,23 @@ function goToJob(jobId: string) {
 .clear-recommendations-btn {
   color: $marketplace-text-muted;
   background: transparent;
-  border: 1px solid rgba(0, 51, 102, 0.15);
+  border: 1px solid rgba($channel-primary, 0.2);
 
   &:hover:not(:disabled) {
-    color: $marketplace-primary;
-    background: rgba(0, 51, 102, 0.06);
-    border-color: rgba(0, 51, 102, 0.25);
+    color: $channel-primary;
+    background: rgba($channel-primary, 0.06);
+    border-color: rgba($channel-primary, 0.3);
   }
 }
 
 .update-recommendations-btn {
-  color: $marketplace-primary;
-  background: rgba(0, 51, 102, 0.08);
-  border: 1px solid rgba(0, 51, 102, 0.2);
+  color: $channel-primary;
+  background: rgba($channel-primary, 0.1);
+  border: 1px solid rgba($channel-primary, 0.25);
 
   &:hover:not(:disabled) {
-    background: rgba(0, 51, 102, 0.12);
-    border-color: rgba(0, 51, 102, 0.35);
+    background: rgba($channel-primary, 0.14);
+    border-color: rgba($channel-primary, 0.4);
   }
 }
 
@@ -694,8 +694,8 @@ function goToJob(jobId: string) {
 }
 
 .recommended-section .job-card {
-  box-shadow: 0 2px 16px rgba(0, 51, 102, 0.1);
-  border: 1px solid rgba(0, 51, 102, 0.12);
+  box-shadow: 0 2px 16px rgba($channel-primary, 0.12);
+  border: 1px solid rgba($channel-primary, 0.15);
 }
 
 .recommended-title {
@@ -703,7 +703,7 @@ function goToJob(jobId: string) {
   align-items: center;
   gap: 8px;
   font-size: 1.1rem;
-  color: $marketplace-primary;
+  color: $channel-primary;
   cursor: default;
   user-select: none;
 
@@ -711,7 +711,7 @@ function goToJob(jobId: string) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: $marketplace-accent;
+    color: $channel-accent;
     font-size: 1rem;
     pointer-events: none;
   }
@@ -728,9 +728,9 @@ function goToJob(jobId: string) {
   max-height: 220px;
   padding: 16px 20px;
   box-sizing: border-box;
-  background: linear-gradient(145deg, rgba(0, 51, 102, 0.06) 0%, rgba(102, 102, 204, 0.08) 100%);
+  background: linear-gradient(145deg, rgba($channel-primary, 0.06) 0%, rgba($channel-accent, 0.1) 100%);
   border-radius: 16px;
-  border: 1px solid rgba(0, 51, 102, 0.12);
+  border: 1px solid rgba($channel-primary, 0.15);
   position: relative;
   overflow: hidden;
 
@@ -741,7 +741,7 @@ function goToJob(jobId: string) {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, $marketplace-primary, $marketplace-accent-alt);
+    background: linear-gradient(90deg, $channel-primary, $channel-accent);
     opacity: 0.9;
   }
 }
@@ -751,7 +751,7 @@ function goToJob(jobId: string) {
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-  color: $marketplace-primary;
+  color: $channel-primary;
 
   i {
     font-size: 1.75rem;
@@ -761,7 +761,7 @@ function goToJob(jobId: string) {
 .share-cta-headline {
   font-size: 1.1rem;
   font-weight: 700;
-  color: $marketplace-primary;
+  color: $channel-primary;
   margin: 0 0 6px 0;
   line-height: 1.3;
   letter-spacing: -0.02em;
@@ -781,20 +781,20 @@ function goToJob(jobId: string) {
   justify-content: center;
   gap: 10px;
   padding: 14px 28px;
-  background: linear-gradient(135deg, $marketplace-primary 0%, $marketplace-secondary 100%);
-  color: $marketplace-text-on-primary;
+  background: linear-gradient(135deg, $channel-primary 0%, $channel-secondary 100%);
+  color: $channel-text-on-primary;
   border: none;
   border-radius: 999px;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 51, 102, 0.35);
+  box-shadow: 0 4px 14px rgba($channel-primary, 0.4);
   transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 51, 102, 0.4);
+    box-shadow: 0 6px 20px rgba($channel-primary, 0.45);
     filter: brightness(1.05);
   }
 
@@ -861,7 +861,7 @@ function goToJob(jobId: string) {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: linear-gradient(135deg, rgba(0, 51, 102, 0.97) 0%, rgba(60, 89, 115, 0.98) 50%, rgba(102, 102, 204, 0.96) 100%);
+  background: linear-gradient(135deg, rgba($channel-primary, 0.97) 0%, rgba($channel-secondary, 0.98) 50%, rgba($channel-accent, 0.92) 100%);
   pointer-events: none;
 }
 
@@ -978,7 +978,7 @@ function goToJob(jobId: string) {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 16px;
-  background: linear-gradient(145deg, rgba(0, 51, 102, 0.04) 0%, rgba(102, 102, 204, 0.06) 100%);
+  background: linear-gradient(145deg, rgba($channel-primary, 0.05) 0%, rgba($channel-accent, 0.08) 100%);
   border-radius: 12px;
 }
 
@@ -995,22 +995,22 @@ function goToJob(jobId: string) {
   display: flex;
   flex-direction: column;
   padding: 16px 18px;
-  border: 2px solid rgba(0, 51, 102, 0.12);
+  border: 2px solid rgba($channel-primary, 0.15);
   border-radius: 12px;
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   background: white;
-  box-shadow: 0 1px 4px rgba(0, 51, 102, 0.04);
+  box-shadow: 0 1px 4px rgba($channel-primary, 0.06);
 
   &:hover {
-    border-color: rgba(0, 51, 102, 0.25);
-    box-shadow: 0 2px 8px rgba(0, 51, 102, 0.08);
+    border-color: rgba($channel-primary, 0.3);
+    box-shadow: 0 2px 8px rgba($channel-primary, 0.1);
   }
 
   &.selected {
-    border-color: $marketplace-primary;
-    background: linear-gradient(135deg, rgba(0, 51, 102, 0.06) 0%, rgba(102, 102, 204, 0.08) 100%);
-    box-shadow: 0 2px 12px rgba(0, 51, 102, 0.12);
+    border-color: $channel-primary;
+    background: linear-gradient(135deg, rgba($channel-primary, 0.06) 0%, rgba($channel-accent, 0.1) 100%);
+    box-shadow: 0 2px 12px rgba($channel-primary, 0.15);
   }
 
   input {
@@ -1019,7 +1019,7 @@ function goToJob(jobId: string) {
 
   .credential-name {
     font-weight: 600;
-    color: $marketplace-primary;
+    color: $channel-primary;
     font-size: 0.95rem;
   }
 
@@ -1036,21 +1036,21 @@ function goToJob(jobId: string) {
   overflow: hidden;
   min-height: 72px;
   padding: 0;
-  background: rgba(0, 51, 102, 0.04);
-  border: 2px solid rgba(0, 51, 102, 0.08);
+  background: rgba($channel-primary, 0.04);
+  border: 2px solid rgba($channel-primary, 0.1);
   border-radius: 12px;
   box-shadow: none;
 
   &:hover {
-    border-color: rgba(0, 51, 102, 0.18);
-    background: rgba(0, 51, 102, 0.06);
+    border-color: rgba($channel-primary, 0.22);
+    background: rgba($channel-primary, 0.06);
   }
 
   &.selected {
     border-width: 3px;
-    border-color: $marketplace-primary;
+    border-color: $channel-primary;
     background: #fff;
-    box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.2), 0 2px 12px rgba(0, 51, 102, 0.15);
+    box-shadow: 0 0 0 2px rgba($channel-primary, 0.25), 0 2px 12px rgba($channel-primary, 0.18);
   }
 
   .credential-card-inner {
@@ -1078,7 +1078,7 @@ function goToJob(jobId: string) {
   }
 
   .credential-option-branded .credential-name {
-    color: $marketplace-primary;
+    color: $channel-primary;
     font-size: 1rem;
     font-weight: 600;
   }
@@ -1098,7 +1098,7 @@ function goToJob(jobId: string) {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 51, 102, 0.06);
+    background: rgba($channel-primary, 0.08);
   }
 
   .credential-logo-img {
@@ -1110,7 +1110,7 @@ function goToJob(jobId: string) {
   .credential-logo-initials {
     font-size: 1rem;
     font-weight: 700;
-    color: $marketplace-primary;
+    color: $channel-primary;
   }
 }
 
@@ -1156,7 +1156,7 @@ function goToJob(jobId: string) {
 
   .btn-primary {
     background: white;
-    color: $marketplace-primary;
+    color: $channel-primary;
 
     &:disabled {
       opacity: 0.8;
@@ -1168,7 +1168,7 @@ function goToJob(jobId: string) {
 .section-title {
   font-size: 1rem;
   font-weight: 700;
-  color: $marketplace-primary;
+  color: $channel-primary;
   margin: 0 0 14px 0;
 }
 
@@ -1200,13 +1200,21 @@ function goToJob(jobId: string) {
   }
 }
 
-/* cards-scroll children (JobCard) need desktop override */
+/* cards-scroll children (JobCard) need desktop override + channel colors */
 .cards-scroll :deep(.job-card) {
   @media (min-width: $breakpoint-desktop) {
     flex: none;
     width: 100%;
     min-width: 0;
     height: auto;
+  }
+
+  .job-card-body h3 {
+    color: $channel-primary;
+  }
+
+  .job-card-cta {
+    color: $channel-secondary;
   }
 }
 </style>

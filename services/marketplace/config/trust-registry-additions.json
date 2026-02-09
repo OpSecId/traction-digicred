@@ -1,0 +1,15 @@
+{
+  "additions": [
+    {
+      "id": "did:123",
+      "name": "University",
+      "type": "EducationInstitution",
+      "did": "did:123",
+      "credentialTypes": [
+        "Diploma"
+      ],
+      "logo": "https://avatars.githubusercontent.com/u/115738872",
+      "website": "https://example.com"
+    }
+  ]
+}

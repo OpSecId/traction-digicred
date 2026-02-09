@@ -4,8 +4,7 @@
       <nav class="footer-nav">
         <router-link to="/holder">Student or Job Seeker</router-link>
         <router-link to="/channel">Channel</router-link>
-        <router-link to="/tenant/onboard">Request tenancy</router-link>
-        <router-link to="/reservation/check">Check reservation</router-link>
+        <router-link to="/reservation">Tenancy Reservation</router-link>
         <router-link to="/innkeeper">Innkeeper's Desk</router-link>
       </nav>
       <p class="footer-copy">© {{ year }} Apply Utopia · DigiCred Marketplace</p>

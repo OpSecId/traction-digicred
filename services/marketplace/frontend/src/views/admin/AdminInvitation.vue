@@ -1,101 +1,109 @@
 <template>
   <div class="admin-invitation">
-    <div class="section-header">
-      <h2 class="section-title">Create invitation</h2>
-      <button
-        type="button"
-        class="save-btn"
-        :disabled="creating"
-        @click="create"
-      >
-        <i :class="creating ? 'pi pi-spin pi-spinner' : 'pi pi-plus'"></i>
-        {{ creating ? 'Creating...' : 'Create invitation' }}
-      </button>
-    </div>
-
-    <p class="section-desc">
-      Create an OOB invitation for the marketplace channel. Use the invitation URL or QR code for holders to connect.
-    </p>
-
-    <form class="config-form" @submit.prevent="create">
-      <div class="form-section">
-        <h3>Content URL</h3>
-        <p class="hint">Marketplace PWA URL (e.g. embed/channel)</p>
-        <input
-          id="content-url"
-          v-model="form.content_url"
-          type="url"
-          name="content_url"
-          placeholder="https://marketplace.example.com/embed/channel"
-          class="input-wide"
-        />
+    <div class="invitation-hero">
+      <div class="hero-content">
+        <div class="hero-icon">
+          <i class="pi pi-qrcode"></i>
+        </div>
+        <h2 class="hero-title">Connect holders to your channel</h2>
+        <p class="hero-desc">Generate a link or QR code for wallet users to join the marketplace.</p>
       </div>
 
-      <div class="form-section">
-        <h3>Goal</h3>
-        <p class="hint">Human-readable goal shown in the invitation</p>
-        <input
-          id="invitation-goal"
-          v-model="form.goal"
-          type="text"
-          name="goal"
-          placeholder="Browse jobs and opportunities from Apply Utopia"
-          class="input-wide"
-        />
+      <div v-if="!result" class="hero-actions">
+        <button
+          type="button"
+          class="btn-create"
+          :disabled="creating"
+          @click="create"
+        >
+          <i :class="creating ? 'pi pi-spin pi-spinner' : 'pi pi-plus-circle'"></i>
+          {{ creating ? 'Creating...' : 'Create invitation' }}
+        </button>
+        <button
+          type="button"
+          class="btn-expand"
+          :class="{ expanded: showOptions }"
+          @click="showOptions = !showOptions"
+        >
+          <i :class="showOptions ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"></i>
+          {{ showOptions ? 'Hide options' : 'Customize' }}
+        </button>
       </div>
 
-      <div class="form-section">
-        <h3>Image URL</h3>
-        <p class="hint">Optional image for OOB invitation (QR display)</p>
-        <input
-          id="image-url"
-          v-model="form.image_url"
-          type="url"
-          name="image_url"
-          placeholder="https://marketplace.example.com/marketplace.png"
-          class="input-wide"
-        />
-      </div>
-
-      <div class="form-section">
-        <div class="checkbox-row">
-          <label>
-            <input id="multi-use" v-model="form.multi_use" type="checkbox" name="multi_use" />
+      <div v-if="showOptions && !result" class="options-panel">
+        <div class="option-row">
+          <label for="content-url">Content URL</label>
+          <input
+            id="content-url"
+            v-model="form.content_url"
+            type="url"
+            placeholder="https://marketplace.example.com/channel"
+            class="input-compact"
+          />
+        </div>
+        <div class="option-row">
+          <label for="invitation-goal">Goal</label>
+          <input
+            id="invitation-goal"
+            v-model="form.goal"
+            type="text"
+            placeholder="Browse jobs and opportunities"
+            class="input-compact"
+          />
+        </div>
+        <div class="option-row inline">
+          <label class="checkbox-label">
+            <input v-model="form.multi_use" type="checkbox" />
             Multi-use invitation
           </label>
         </div>
       </div>
-    </form>
+    </div>
 
-    <div v-if="result" class="result-section">
-      <h3>Invitation created</h3>
-      <div class="result-url-wrap">
-        <label>Invitation URL</label>
-        <div class="url-row">
+    <div v-if="result" class="result-card">
+      <div class="result-header">
+        <i class="pi pi-check-circle"></i>
+        <span>Invitation ready</span>
+      </div>
+      <div class="result-body">
+        <div class="result-qr">
+          <QrcodeVue
+            v-if="result.invitation_url"
+            :value="result.invitation_url"
+            :size="160"
+            level="M"
+          />
+          <p class="qr-hint">Scan with DigiCred Wallet</p>
+        </div>
+        <div class="result-url">
           <input
-            id="invitation-url-result"
             :value="result.invitation_url"
             readonly
-            name="invitation_url"
-            class="input-wide url-input"
+            class="url-input"
           />
-          <button type="button" class="copy-btn" :class="{ copied: copyFeedback }" @click="copyUrl">
+          <button type="button" class="btn-copy" :class="{ copied: copyFeedback }" @click="copyUrl">
             <i :class="copyFeedback ? 'pi pi-check' : 'pi pi-copy'"></i>
-            {{ copyFeedback ? 'Copied!' : 'Copy' }}
+            {{ copyFeedback ? 'Copied!' : 'Copy link' }}
+          </button>
+          <button type="button" class="btn-new" @click="reset">
+            <i class="pi pi-plus"></i>
+            Create another
           </button>
         </div>
       </div>
-      <p class="hint">Share this URL or generate a QR code for holders to connect.</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
+import QrcodeVue from 'qrcode.vue';
 import * as adminApi from '@/api/admin';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const creating = ref(false);
 const copyFeedback = ref(false);
+const showOptions = ref(false);
 const result = ref<adminApi.MarketplaceInvitationResponse | null>(null);
 
 const form = reactive({
@@ -103,6 +111,12 @@ const form = reactive({
   goal: 'Browse jobs and opportunities from Apply Utopia',
   image_url: '',
   multi_use: true,
+});
+
+onMounted(() => {
+  if (!form.content_url && typeof window !== 'undefined') {
+    form.content_url = `${window.location.origin}/channel`;
+  }
 });
 
 async function create() {
@@ -118,12 +132,16 @@ async function create() {
     result.value = res;
   } catch (err: unknown) {
     console.error('Create invitation error:', err);
-    const ax = err && typeof err === 'object' && 'response' in err ? err as { response?: { data?: { error?: string } } } : null;
-    const msg = ax?.response?.data?.error ?? 'Failed to create invitation. Ensure MARKETPLACE_AGENCY_URI is configured and the agency is reachable.';
+    const msg = getApiErrorMessage(err, 'Failed to create invitation. Ensure MARKETPLACE_AGENCY_URI is configured and the agency is reachable.');
     alert(msg);
   } finally {
     creating.value = false;
   }
+}
+
+function reset() {
+  result.value = null;
+  copyFeedback.value = false;
 }
 
 async function copyUrl() {
@@ -150,149 +168,246 @@ async function copyUrl() {
 @use '@/assets/variables.scss' as *;
 
 .admin-invitation {
-  .save-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 8px;
-    border: none;
-    background: $marketplace-primary;
-    color: white;
-    cursor: pointer;
-    transition: opacity 0.2s;
+  max-width: 520px;
+}
 
-    &:hover:not(:disabled) {
-      opacity: 0.9;
-    }
+.invitation-hero {
+  padding: 24px 28px;
+  background: linear-gradient(135deg, rgba(0, 51, 102, 0.06) 0%, rgba(0, 51, 102, 0.02) 100%);
+  border: 1px solid rgba(0, 51, 102, 0.12);
+  border-radius: 14px;
+}
 
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+.hero-content {
+  margin-bottom: 20px;
+}
+
+.hero-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, $marketplace-primary 0%, $marketplace-secondary 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  margin-bottom: 14px;
+}
+
+.hero-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $marketplace-text;
+  margin: 0 0 6px 0;
+}
+
+.hero-desc {
+  font-size: 0.9rem;
+  color: $marketplace-text-muted;
+  margin: 0;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, $marketplace-primary 0%, $marketplace-secondary 100%);
+  color: white;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 51, 102, 0.35);
   }
 
-  .section-desc {
-    font-size: 0.9rem;
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.btn-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid $marketplace-panel-border;
+  background: white;
+  color: $marketplace-text-muted;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+
+  &:hover {
+    color: $marketplace-primary;
+    border-color: rgba(0, 51, 102, 0.3);
+  }
+}
+
+.options-panel {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 51, 102, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.option-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &.inline {
+    flex-direction: row;
+  }
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 500;
     color: $marketplace-text-muted;
-    margin: -8px 0 20px 0;
   }
 
-  .config-form {
-    max-width: 560px;
-    margin-bottom: 32px;
-  }
-
-  .form-section {
-    margin-bottom: 24px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid $marketplace-panel-border;
-
-    &:last-child {
-      border-bottom: none;
-    }
-
-    h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: $marketplace-primary;
-      margin: 0 0 8px 0;
-    }
-
-    .hint {
-      font-size: 0.85rem;
-      color: $marketplace-text-muted;
-      margin: 0 0 10px 0;
-    }
-  }
-
-  .checkbox-row label {
+  .checkbox-label {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.95rem;
-    cursor: pointer;
-  }
-
-  .input-wide {
-    width: 100%;
-    max-width: 400px;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid $marketplace-panel-border;
     font-size: 0.9rem;
+    color: $marketplace-text;
+    cursor: pointer;
+
+    input {
+      width: 18px;
+      height: 18px;
+      accent-color: $marketplace-primary;
+    }
+  }
+}
+
+.input-compact {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid $marketplace-panel-border;
+  font-size: 0.9rem;
+}
+
+.result-card {
+  margin-top: 20px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(51, 108, 55, 0.08) 0%, rgba(51, 108, 55, 0.04) 100%);
+  border: 1px solid rgba(51, 108, 55, 0.2);
+  border-radius: 14px;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: $marketplace-success;
+  margin-bottom: 18px;
+
+  i {
+    font-size: 1.25rem;
+  }
+}
+
+.result-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.result-qr {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+  .qr-hint {
+    font-size: 0.8rem;
+    color: $marketplace-text-muted;
+    margin: 0;
+  }
+}
+
+.result-url {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.url-input {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid $marketplace-panel-border;
+  font-size: 0.85rem;
+  font-family: ui-monospace, monospace;
+  background: white;
+}
+
+.btn-copy,
+.btn-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-copy {
+  border: 1px solid $marketplace-panel-border;
+  background: white;
+  color: $marketplace-primary;
+
+  &:hover {
+    background: rgba(0, 51, 102, 0.06);
   }
 
-  .result-section {
-    margin-top: 24px;
-    padding: 20px;
-    background: rgba(51, 108, 55, 0.08);
-    border-radius: 10px;
-    border: 1px solid rgba(51, 108, 55, 0.2);
+  &.copied {
+    border-color: $marketplace-success;
+    color: $marketplace-success;
+    background: rgba(51, 108, 55, 0.1);
+  }
+}
 
-    h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: $marketplace-success;
-      margin: 0 0 12px 0;
-    }
+.btn-new {
+  border: none;
+  background: transparent;
+  color: $marketplace-text-muted;
 
-    .result-url-wrap {
-      margin-bottom: 8px;
-
-      label {
-        display: block;
-        font-size: 0.85rem;
-        font-weight: 500;
-        margin-bottom: 6px;
-        color: $marketplace-text-muted;
-      }
-    }
-
-    .url-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-
-      .url-input {
-        flex: 1;
-        max-width: none;
-        font-family: monospace;
-        font-size: 0.85rem;
-      }
-
-      .copy-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 14px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        border-radius: 8px;
-        border: 1px solid $marketplace-panel-border;
-        background: white;
-        cursor: pointer;
-        transition: background 0.2s, border-color 0.2s, color 0.2s;
-
-        &:hover {
-          background: rgba(0, 51, 102, 0.06);
-        }
-
-        &.copied {
-          border-color: #22c55e;
-          color: #22c55e;
-          background: rgba(34, 197, 94, 0.08);
-        }
-      }
-    }
-
-    .hint {
-      font-size: 0.85rem;
-      color: $marketplace-text-muted;
-      margin: 8px 0 0 0;
-    }
+  &:hover {
+    color: $marketplace-primary;
   }
 }
 </style>

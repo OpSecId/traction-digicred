@@ -9,9 +9,4 @@ items:
     description: Browse certifications and credentials
   - title: Share transcript
     description: Share your transcript credential for job matching
-presentationRequestCredentialTypes:
-  - CollegeTranscript
-  - HighSchoolTranscript
-  - Diploma
-  - StudentCard
-  - EmploymentCredential
+presentationRequestCredentialTypes: []

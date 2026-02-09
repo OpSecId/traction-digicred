@@ -54,12 +54,17 @@
             </td>
             <td>
               <span class="org-name">{{ req.name }}</span>
-              <span class="org-email">{{ req.email }}</span>
+              <span v-if="req.industry || req.jurisdiction" class="org-detail">
+                {{ [req.industry, req.jurisdiction].filter(Boolean).join(' · ') }}
+              </span>
             </td>
             <td>
-              <span v-if="req.contactName" class="contact-cell">
-                {{ req.contactName }}{{ req.contactTitle ? ` · ${req.contactTitle}` : '' }}{{ req.industry ? ` · ${req.industry}` : '' }}
-              </span>
+              <template v-if="req.contactName || req.contactTitle || req.email">
+                <span v-if="req.contactName || req.contactTitle" class="contact-name">
+                  {{ req.contactName }}{{ req.contactTitle ? ` · ${req.contactTitle}` : '' }}
+                </span>
+                <span v-if="req.email" :class="(req.contactName || req.contactTitle) ? 'contact-email' : 'contact-name'">{{ req.email }}</span>
+              </template>
               <span v-else class="text-muted">—</span>
             </td>
             <td>{{ formatDate(req.submittedAt) }}</td>
@@ -477,7 +482,20 @@ function tenancyTypeClass(type: TenancyType | undefined) {
     font-size: 0.875rem;
   }
 
-  .org-email {
+  .org-email,
+  .org-detail {
+    display: block;
+    font-size: 0.75rem;
+    color: $marketplace-text-muted;
+  }
+
+  .contact-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .contact-email {
     display: block;
     font-size: 0.75rem;
     color: $marketplace-text-muted;

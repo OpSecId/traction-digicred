@@ -102,6 +102,8 @@ export interface ReservationInput {
   broker?: { type: 'Person' | 'Organization'; name: string; id?: string };
   totalPrice?: number | string;
   priceCurrency?: string;
+  /** Intended use of the reservation (Reservation-level) */
+  intendedUse?: string;
   /** Credential name/description */
   name?: string;
   description?: string;
@@ -116,24 +118,21 @@ export function buildReservationCredentialFromTenantRequest(
   const underName: Record<string, unknown> = {
     type: 'Organization',
     name: tenantRequest.name,
-    email: tenantRequest.email,
     id: tenantRequest.id,
   };
-  if (tenantRequest.contactName || tenantRequest.contactTitle || tenantRequest.contactPhone) {
-    underName.contactPoint = {
-      type: 'ContactPoint',
-      ...(tenantRequest.contactName && { name: tenantRequest.contactName }),
-      ...(tenantRequest.contactTitle && { jobTitle: tenantRequest.contactTitle }),
-      ...(tenantRequest.contactPhone && { telephone: tenantRequest.contactPhone }),
-    };
-  }
+  underName.contactPoint = {
+    type: 'ContactPoint',
+    email: tenantRequest.email,
+    ...(tenantRequest.contactName && { name: tenantRequest.contactName }),
+    ...(tenantRequest.contactTitle && { contactType: tenantRequest.contactTitle }),
+    ...(tenantRequest.contactPhone && { telephone: tenantRequest.contactPhone }),
+  };
   if (tenantRequest.registrationId) underName.registrationId = tenantRequest.registrationId;
   if (tenantRequest.jurisdiction) underName.jurisdiction = tenantRequest.jurisdiction;
   if (tenantRequest.businessAddress)
     underName.address = { type: 'PostalAddress', streetAddress: tenantRequest.businessAddress };
   if (tenantRequest.website) underName.url = tenantRequest.website;
   if (tenantRequest.industry) underName.industry = tenantRequest.industry;
-  if (tenantRequest.intendedUse) underName.intendedUse = tenantRequest.intendedUse;
 
   return buildReservationCredential({
     reservationId: tenantRequest.referenceId ?? tenantRequest.id,
@@ -144,6 +143,7 @@ export function buildReservationCredentialFromTenantRequest(
       tenancyType: tenantRequest.tenancyType,
     },
     underName,
+    intendedUse: tenantRequest.intendedUse,
     provider: {
       type: 'Organization',
       name: marketplaceIssuer.name,
@@ -170,6 +170,7 @@ export function buildReservationCredential(input: ReservationInput): Record<stri
     underName: input.underName,
   };
   if (input.reservationId) credentialSubject.reservationId = input.reservationId;
+  if (input.intendedUse) credentialSubject.intendedUse = input.intendedUse;
   if (input.provider) credentialSubject.provider = input.provider;
   if (input.broker) credentialSubject.broker = input.broker;
   if (input.totalPrice != null) credentialSubject.totalPrice = input.totalPrice;

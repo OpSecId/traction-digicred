@@ -2,6 +2,7 @@ import { createWebHistory, createRouter } from 'vue-router';
 import AppLayout from '@/components/AppLayout.vue';
 import ChannelLayout from '@/components/ChannelLayout.vue';
 import { useAdminStore } from '@/store/adminStore';
+import { useEmployerStore } from '@/store/employerStore';
 import { isMobile } from '@/utils/isMobile';
 
 const CHANNEL_PATHS = ['/connect', '/channel', '/scholarships', '/services', '/education', '/job/'];
@@ -108,10 +109,10 @@ const routes = [
         meta: { title: 'Student or Job Seeker' },
       },
       {
-        path: 'tenant',
-        name: 'TenancyHub',
-        component: () => import('@/views/TenancyHub.vue'),
-        meta: { title: 'Marketplace Hub', nav: 'tenant' },
+        path: 'tenant/login',
+        name: 'TenantLogin',
+        component: () => import('@/views/TenantLogin.vue'),
+        meta: { title: 'Marketplace Hub Sign In' },
       },
       {
         path: 'tenant/onboard',
@@ -120,28 +121,41 @@ const routes = [
         meta: { title: 'Request Tenancy' },
       },
       {
-        path: 'tenant/jobs',
-        name: 'EmployerJobs',
-        component: () => import('@/views/EmployerJobs.vue'),
-        meta: { title: 'My Job Postings' },
-      },
-      {
-        path: 'tenant/workflows',
-        name: 'EmployerWorkflows',
-        component: () => import('@/views/EmployerWorkflows.vue'),
-        meta: { title: 'Manage Workflows' },
-      },
-      {
-        path: 'tenant/jobs/create',
-        name: 'EmployerJobCreate',
-        component: () => import('@/views/EmployerJobCreate.vue'),
-        meta: { title: 'Create Job Posting' },
-      },
-      {
-        path: 'tenant/jobs/:jobId/applicants',
-        name: 'JobApplicants',
-        component: () => import('@/views/JobApplicants.vue'),
-        meta: { title: 'Applicants' },
+        path: 'tenant',
+        component: () => import('@/views/TenantDashboard.vue'),
+        meta: { title: 'Marketplace Hub', nav: 'tenant', requiresTenant: true },
+        children: [
+          {
+            path: '',
+            name: 'TenantHubHome',
+            component: () => import('@/views/TenantHubHome.vue'),
+            meta: { title: 'Marketplace Hub' },
+          },
+          {
+            path: 'jobs',
+            name: 'EmployerJobs',
+            component: () => import('@/views/EmployerJobs.vue'),
+            meta: { title: 'My Job Postings | Marketplace Hub' },
+          },
+          {
+            path: 'jobs/create',
+            name: 'EmployerJobCreate',
+            component: () => import('@/views/EmployerJobCreate.vue'),
+            meta: { title: 'Create Job Posting | Marketplace Hub' },
+          },
+          {
+            path: 'jobs/:jobId/applicants',
+            name: 'JobApplicants',
+            component: () => import('@/views/JobApplicants.vue'),
+            meta: { title: 'Applicants | Marketplace Hub' },
+          },
+          {
+            path: 'workflows',
+            name: 'EmployerWorkflows',
+            component: () => import('@/views/EmployerWorkflows.vue'),
+            meta: { title: 'Manage Workflows | Marketplace Hub' },
+          },
+        ],
       },
     ],
   },
@@ -209,6 +223,12 @@ router.beforeEach((to) => {
     const adminStore = useAdminStore();
     if (!adminStore.isAdmin) {
       return { path: '/innkeeper/login', query: { redirect: to.fullPath } };
+    }
+  }
+  if (to.meta.requiresTenant && to.path !== '/tenant/login' && to.path !== '/tenant/onboard') {
+    const employerStore = useEmployerStore();
+    if (!employerStore.isEmployer) {
+      return { path: '/tenant/login', query: { redirect: to.fullPath } };
     }
   }
 });

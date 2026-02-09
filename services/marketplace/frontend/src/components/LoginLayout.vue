@@ -4,6 +4,7 @@
     :class="{
       'login-layout--admin': variant === 'admin',
       'login-layout--holder': variant === 'holder',
+      'login-layout--tenant': variant === 'tenant',
     }"
   >
     <div class="login-panel login-panel-brand">
@@ -39,7 +40,7 @@ defineProps<{
   brandTitle: string;
   brandTagline: string;
   brandFeatures?: string[];
-  variant?: 'default' | 'admin' | 'holder';
+  variant?: 'default' | 'admin' | 'holder' | 'tenant';
 }>();
 </script>
 
@@ -88,6 +89,10 @@ defineProps<{
     background: linear-gradient(145deg, #0f172a 0%, #1e293b 40%, #334155 100%);
   }
 
+  .login-layout--tenant & {
+    background: linear-gradient(145deg, #0f766e 0%, #0d9488 40%, #134e4a 100%);
+  }
+
   .login-layout--holder & {
     background: linear-gradient(145deg, #b45309 0%, #ea580c 40%, #fbbf24 100%);
   }
@@ -110,6 +115,18 @@ defineProps<{
   .login-layout--admin & {
     background-image: radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
       radial-gradient(circle at 80% 20%, rgba(180, 140, 70, 0.15) 0%, transparent 40%),
+      repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 40px,
+        rgba(255, 255, 255, 0.02) 40px,
+        rgba(255, 255, 255, 0.02) 80px
+      );
+  }
+
+  .login-layout--tenant & {
+    background-image: radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(45, 212, 191, 0.2) 0%, transparent 40%),
       repeating-linear-gradient(
         -45deg,
         transparent,
@@ -218,6 +235,11 @@ defineProps<{
       color: #c9a227;
     }
 
+    .login-layout--tenant & i {
+      background: rgba(45, 212, 191, 0.35);
+      color: #5eead4;
+    }
+
     .login-layout--holder & i {
       background: rgba(255, 255, 255, 0.25);
       color: #fef3c7;
@@ -247,6 +269,12 @@ defineProps<{
     background-image:
       radial-gradient(ellipse 80% 50% at 50% -20%, rgba(30, 41, 59, 0.08), transparent),
       linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+  }
+
+  .login-layout--tenant & {
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(13, 148, 136, 0.08), transparent),
+      linear-gradient(180deg, #f0fdfa 0%, #e6fffa 100%);
   }
 
   .login-layout--holder & {

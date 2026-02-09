@@ -68,7 +68,7 @@ Verifiable apprenticeship or work-based training program. Uses schema.org [WorkB
 
 Marketplace tenancy reservation. Uses schema.org [Reservation](https://schema.org/Reservation). Created when an organization submits an onboarding request; includes KYC form data.
 
-- **credentialSubject**: `Reservation` type with `reservationId`, `reservationFor` (MarketplaceTenancy), `underName` (Organization with KYC: `contactPoint` (schema.org ContactPoint), `registrationId`, `jurisdiction`, `address`, `url`, `industry`, `intendedUse`), `provider`
+- **credentialSubject**: `Reservation` type with `reservationId`, `reservationFor` (MarketplaceTenancy), `underName` (Organization with KYC: `contactPoint` (schema.org ContactPoint with `email`, `name`, `contactType`, `telephone`), `registrationId`, `jurisdiction`, `address`, `url`, `industry`), `intendedUse` (Reservation-level), `provider`
 
 ## Signing
 

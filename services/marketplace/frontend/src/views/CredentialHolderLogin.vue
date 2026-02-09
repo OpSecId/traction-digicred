@@ -1,7 +1,7 @@
 <template>
   <div class="credential-holder-login">
     <LoginLayout
-      variant="holder"
+      variant="tenant"
       brand-badge="Credential Holder"
       brand-badge-icon="pi-user"
       brand-title="Student or Job Seeker"

@@ -136,7 +136,7 @@
       </form>
 
       <p class="sign-in-prompt">
-        Already have an account? Sign in at the <router-link to="/tenant">Marketplace Hub</router-link>.
+        Already have an account? Sign in at the <router-link to="/tenant/login">Marketplace Hub</router-link>.
       </p>
     </div>
   </div>
@@ -243,7 +243,7 @@ async function submitOnboarding() {
     });
     if (result.success) {
       router.push({
-        name: 'TenancyHub',
+        path: '/tenant/login',
         query: { onboarded: '1', ...(result.referenceId && { ref: result.referenceId }) },
       });
     } else {

@@ -19,7 +19,6 @@ import { buildMarketplaceProfileCredential } from './controllers/credentialIssua
 import { marketplaceBaseUrl, marketplaceIssuer, tenantDidWeb, tenantDidWebForShortId } from './config';
 import { buildJobPostingCredential } from './controllers/jobPostingController';
 import { buildEmployerProfileCredential } from './controllers/employerProfileController';
-import { createTenant as pluginCreateTenant } from './controllers/pluginDbController';
 import { asyncHandler } from './utils/asyncHandler';
 import { parseJobBody } from './utils/jobBody';
 import { getMongoDb } from './db/mongodb';
@@ -356,18 +355,18 @@ app.patch('/api/tenant-requests/:id', asyncHandler(async (req, res) => {
     res.status(400).json({ error: 'status must be "approved" or "rejected"' });
     return;
   }
-  const updated = await tenantRequestRepo.updateStatus(id, body.status, { rejectionReason: body.rejectionReason });
-  if (!updated) {
+  const existing = await tenantRequestRepo.getById(id);
+  if (!existing) {
     res.status(404).json({ error: 'Tenant request not found' });
     return;
   }
   let apiKey: string | undefined;
   if (body.status === 'approved') {
-    await workflowRepo.create(id, 'verify-tenant');
-    const upd = updated as Record<string, unknown>;
+    const upd = existing as Record<string, unknown>;
     const cred = upd.credential as Record<string, unknown> | undefined;
     const subj = cred?.credentialSubject as Record<string, unknown> | undefined;
     const underName = subj?.underName as Record<string, unknown> | undefined;
+    const contactPoint = underName?.contactPoint as Record<string, unknown> | undefined;
     const reservationFor = subj?.reservationFor as Record<string, unknown> | undefined;
     const address = underName?.address as Record<string, unknown> | undefined;
     const shortId = randomBytes(6).toString('base64url');
@@ -376,23 +375,25 @@ app.patch('/api/tenant-requests/:id', asyncHandler(async (req, res) => {
       id: String(underName?.id ?? upd.id ?? ''),
       subjectId: tenantSubjectId,
       name: String(underName?.name ?? ''),
-      email: String(underName?.email ?? ''),
+      email: String(contactPoint?.email ?? underName?.email ?? ''),
       tenancyType: String(reservationFor?.tenancyType ?? ''),
       industry: underName?.industry as string | undefined,
       website: underName?.url as string | undefined,
       businessAddress: address?.streetAddress as string | undefined,
     });
-    const tenant = await pluginCreateTenant(id, { credential: credentialToStore });
-    if (tenant) {
-      await tenantRepo.saveFromPlugin({ ...tenant, credential: credentialToStore }, shortId);
-      apiKey = randomBytes(24).toString('base64url');
-      await tenantRepo.setApiKey(String(tenant.id), apiKey);
-      if (upd.tenancyType === 'Employer') {
-        await employerProfileRepo.create(String(tenant.id), credentialToStore);
-      }
+    const tenant = await tenantRepo.create({
+      tenantRequestId: id,
+      credential: credentialToStore,
+      shortId,
+    });
+    if (upd.tenancyType === 'Employer') {
+      await employerProfileRepo.create(String(tenant.id), credentialToStore);
     }
+    apiKey = randomBytes(24).toString('base64url');
+    await tenantRepo.setApiKey(String(tenant.id), apiKey);
     console.log('Stored MarketplaceProfileCredential for', underName?.name ?? upd.name);
   }
+  const updated = await tenantRequestRepo.updateStatus(id, body.status, { rejectionReason: body.rejectionReason });
   res.json({ ...updated, apiKey });
 }));
 

@@ -1,36 +1,6 @@
 <template>
-  <div class="tenancy-hub" :class="{ 'tenancy-hub--login': !employerStore.isEmployer }">
-    <div v-if="employerStore.isEmployer" class="hub-hero">
-      <h1>Marketplace Hub</h1>
-      <p>Manage your publications and applicants</p>
-    </div>
-
-    <div v-if="submittedRef" class="modal-overlay" @click.self="closeConfirmationModal">
-      <div class="confirmation-modal">
-        <i class="pi pi-check-circle confirmation-icon"></i>
-        <h3>Request submitted</h3>
-        <p>Your request has been received and is under review.</p>
-        <div class="reference-id-field">
-          <code class="reference-id">{{ submittedRef }}</code>
-          <button
-            type="button"
-            class="copy-icon-btn"
-            :class="{ copied: copyFeedback }"
-            :title="copyFeedback ? 'Copied!' : 'Copy to clipboard'"
-            aria-label="Copy to clipboard"
-            @click="copyReferenceId"
-          >
-            <i :class="copyFeedback ? 'pi pi-check' : 'pi pi-copy'"></i>
-          </button>
-        </div>
-        <p class="reference-hint">Save this ID to follow up on your request.</p>
-        <button type="button" class="modal-done-btn" @click="closeConfirmationModal">
-          Done
-        </button>
-      </div>
-    </div>
-
-    <div v-if="employerStore.isEmployer" class="tenancy-dashboard">
+  <div class="tenant-hub-home">
+    <div class="hub-content">
       <!-- Profile card (prominent, at top) -->
       <div class="marketplace-card tenancy-profile-card profile-card-hero">
         <div class="profile-card-header">
@@ -84,9 +54,6 @@
             <i class="pi pi-sitemap"></i>
             Manage workflows
           </router-link>
-          <button class="action-btn secondary" @click="handleSignOut">
-            Sign out
-          </button>
         </div>
       </div>
 
@@ -132,122 +99,17 @@
         </div>
       </template>
     </DetailModalCard>
-
-    <LoginLayout
-      v-if="!employerStore.isEmployer"
-      brand-badge="Tenant"
-      brand-badge-icon="pi-building"
-      brand-title="Marketplace Hub"
-      brand-tagline="Manage your publications and applicants"
-      :brand-features="['Publish jobs and opportunities', 'Review applicants with verified credentials', 'Track workflows and outcomes']"
-    >
-      <div class="login-form-header">
-        <h2>Sign in</h2>
-        <p>Enter your tenant email and API key from your approval email</p>
-      </div>
-      <form class="login-form" @submit.prevent="handleLogin">
-        <div class="login-form-field">
-          <label for="login-email">Email</label>
-          <input
-            id="login-email"
-            v-model="loginEmail"
-            type="email"
-            required
-            placeholder="you@company.com"
-            autocomplete="email"
-          />
-        </div>
-        <div class="login-form-field">
-          <label for="login-api-key">API key</label>
-          <input
-            id="login-api-key"
-            v-model="loginPassword"
-            type="password"
-            required
-            placeholder="Paste API key from approval email"
-            autocomplete="off"
-          />
-        </div>
-        <p v-if="loginError" class="login-form-error">
-          <i class="pi pi-exclamation-circle"></i>
-          {{ loginError }}
-        </p>
-        <button type="submit" class="login-submit-btn" :disabled="loggingIn">
-          <i v-if="!loggingIn" class="pi pi-sign-in"></i>
-          <i v-else class="pi pi-spin pi-spinner"></i>
-          {{ loggingIn ? 'Signing in...' : 'Sign in' }}
-        </button>
-      </form>
-      <div class="login-form-footer">
-        <p>
-          Don't have an account?
-          <router-link to="/tenant/onboard">Request tenancy</router-link>
-        </p>
-        <router-link to="/reservation/check" class="secondary">
-          <i class="pi pi-search"></i>
-          Check reservation status
-        </router-link>
-      </div>
-      <router-link to="/" class="login-back-link">
-        <i class="pi pi-arrow-left"></i>
-        Back to marketplace
-      </router-link>
-    </LoginLayout>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import LoginLayout from '@/components/LoginLayout.vue';
 import DetailModalCard from '@/components/DetailModalCard.vue';
 import { useEmployerStore } from '@/store/employerStore';
-import { tenantLogin, tenantLogout } from '@/api/auth';
 import { getEmployerProfile, listJobPostings, listEmployerWorkflows, profileSubjectFromCredential, emailFromSubject } from '@/api/employerJobs';
-import { getApiErrorMessage } from '@/utils/apiError';
 
-const route = useRoute();
-const router = useRouter();
 const employerStore = useEmployerStore();
-
-const loginEmail = ref('');
-const loginPassword = ref('');
-const loggingIn = ref(false);
-const loginError = ref('');
-const copyFeedback = ref(false);
 const showProfileModal = ref(false);
-
-const submittedRef = computed(() => {
-  if (route.query.onboarded === '1' && route.query.ref) {
-    return String(route.query.ref);
-  }
-  return null;
-});
-
-async function copyReferenceId() {
-  if (!submittedRef.value) return;
-  try {
-    await navigator.clipboard.writeText(submittedRef.value);
-    copyFeedback.value = true;
-    setTimeout(() => { copyFeedback.value = false; }, 2000);
-  } catch {
-    // Fallback for older browsers
-    const textarea = document.createElement('textarea');
-    textarea.value = submittedRef.value;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-    copyFeedback.value = true;
-    setTimeout(() => { copyFeedback.value = false; }, 2000);
-  }
-}
-
-function closeConfirmationModal() {
-  router.replace({ path: '/tenant', query: {} });
-}
-
-const jobCount = computed(() => apiJobCount.value);
 
 const employerProfile = ref<Awaited<ReturnType<typeof getEmployerProfile>>>(null);
 const apiJobCount = ref(0);
@@ -263,6 +125,8 @@ const profileName = computed(() => {
 const profileEmail = computed(() => emailFromSubject(subject.value));
 const profileIndustry = computed(() => subject.value.industry as string | undefined);
 const profileWebsite = computed(() => (subject.value.url as string) || (subject.value.website as string) || undefined);
+
+const jobCount = computed(() => apiJobCount.value);
 
 const workflowStats = computed(() => {
   const list = workflows.value;
@@ -298,61 +162,16 @@ watch(
   },
   { immediate: true }
 );
-
-async function handleSignOut() {
-  try {
-    await tenantLogout();
-  } catch {
-    // Ignore - clear local state anyway
-  }
-  employerStore.clearEmployer();
-}
-
-async function handleLogin() {
-  loginError.value = '';
-  loggingIn.value = true;
-  const email = loginEmail.value.trim();
-  const apiKey = loginPassword.value;
-  try {
-    const { employerId } = await tenantLogin(email, apiKey);
-    employerStore.setEmployer(employerId);
-  } catch (err: unknown) {
-    loginError.value = getApiErrorMessage(err, {
-      fallback: 'Sign in failed.',
-      unauthMessage: 'Invalid email or API key',
-    });
-  } finally {
-    loggingIn.value = false;
-  }
-}
 </script>
 
 <style scoped lang="scss">
 @use '@/assets/variables.scss' as *;
-@use '@/assets/page-common.scss';
 
-.tenancy-hub {
-  padding: 16px 20px 32px;
+.tenant-hub-home {
   max-width: 720px;
-  margin: 0 auto;
-
-  @media (min-width: $breakpoint-desktop) {
-    padding: 24px 32px 48px;
-  }
-
-  &.tenancy-hub--login {
-    width: 100%;
-    max-width: none;
-    padding: 0;
-    margin: 0;
-    min-height: 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
 }
 
-.tenancy-dashboard {
+.hub-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -391,23 +210,6 @@ async function handleLogin() {
     color: $marketplace-text-muted;
     text-align: center;
     line-height: 1.2;
-  }
-}
-
-.hub-hero {
-  margin-bottom: 24px;
-
-  h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: $marketplace-primary;
-    margin: 0 0 8px 0;
-  }
-
-  p {
-    font-size: 1rem;
-    color: $marketplace-text-muted;
-    margin: 0;
   }
 }
 
@@ -489,17 +291,7 @@ async function handleLogin() {
         width: 16px;
         flex-shrink: 0;
       }
-
-      a {
-        color: $marketplace-primary;
-        text-decoration: none;
-
-        &:hover {
-          text-decoration: underline;
-        }
-      }
     }
-
   }
 
   .contact-section {
@@ -609,134 +401,6 @@ async function handleLogin() {
     background: $marketplace-primary;
     color: $marketplace-text-on-primary;
   }
-
-  &.secondary {
-    background: transparent;
-    color: $marketplace-text-muted;
-    border: 1px solid $marketplace-panel-border;
-    margin-top: 8px;
-  }
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  animation: fadeIn 0.2s ease;
-}
-
-.confirmation-modal {
-  background: white;
-  border-radius: 16px;
-  padding: 28px;
-  text-align: center;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-
-  .confirmation-icon {
-    font-size: 2.5rem;
-    color: $marketplace-success;
-    margin-bottom: 12px;
-  }
-
-  h3 {
-    font-size: 1.25rem;
-    color: $marketplace-primary;
-    margin: 0 0 8px 0;
-  }
-
-  p {
-    font-size: 0.95rem;
-    color: $marketplace-text-muted;
-    margin: 0 0 12px 0;
-  }
-
-  .reference-id-field {
-    display: flex;
-    align-items: center;
-    margin: 16px 0 8px 0;
-    background: $marketplace-panel-border;
-    border-radius: 10px;
-    border: 1px solid rgba(0, 51, 102, 0.12);
-    overflow: hidden;
-  }
-
-  .reference-id {
-    flex: 1;
-    padding: 12px 14px;
-    font-family: monospace;
-    font-weight: 600;
-    color: $marketplace-primary;
-    font-size: 1rem;
-    border: none;
-    background: transparent;
-    min-width: 0;
-  }
-
-  .copy-icon-btn {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    border: none;
-    border-left: 1px solid rgba(0, 51, 102, 0.12);
-    background: transparent;
-    color: $marketplace-text-muted;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-
-    i {
-      font-size: 1.1rem;
-    }
-
-    &:hover {
-      background: rgba(0, 51, 102, 0.06);
-      color: $marketplace-primary;
-    }
-
-    &.copied {
-      color: $marketplace-success;
-      background: rgba(51, 108, 55, 0.08);
-    }
-  }
-
-  .reference-hint {
-    font-size: 0.85rem;
-    color: $marketplace-text-muted;
-    font-style: italic;
-    margin-bottom: 20px;
-  }
-
-  .modal-done-btn {
-    width: 100%;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    background: $marketplace-primary;
-    color: $marketplace-text-on-primary;
-    transition: opacity 0.2s;
-
-    &:hover {
-      opacity: 0.9;
-    }
-  }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 .profile-modal-details {

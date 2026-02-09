@@ -1,6 +1,6 @@
 <template>
   <div class="marketplace-app">
-    <header v-if="!isInnkeeperRoute" class="marketplace-header">
+    <header v-if="!isInnkeeperRoute && !isTenantDashboardRoute && !isTenantLoginRoute" class="marketplace-header">
       <div class="marketplace-header-inner">
         <div class="marketplace-header-title">
           <router-link to="/" class="header-logo-link">
@@ -9,7 +9,7 @@
           </router-link>
         </div>
         <div class="header-actions">
-          <router-link to="/tenant" class="header-sign-in">
+          <router-link to="/tenant/login" class="header-sign-in">
             <i class="pi pi-user"></i>
             <span>Sign in</span>
           </router-link>
@@ -49,11 +49,17 @@ const route = useRoute();
 
 const isInnkeeperRoute = computed(() => route.path.startsWith('/innkeeper'));
 
+const isTenantDashboardRoute = computed(() => {
+  const p = route.path;
+  return p.startsWith('/tenant') && p !== '/tenant/login' && p !== '/tenant/onboard';
+});
+
+const isTenantLoginRoute = computed(() => route.path === '/tenant/login');
+
 const showFooter = computed(() => {
   const p = route.path;
-  if (isInnkeeperRoute.value) return false;
+  if (isInnkeeperRoute.value || isTenantDashboardRoute.value || isTenantLoginRoute.value) return false;
   return (
-    p === '/tenant' ||
     p === '/tenant/onboard' ||
     p === '/holder' ||
     !p.startsWith('/tenant')
